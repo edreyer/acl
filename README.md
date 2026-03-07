@@ -30,9 +30,23 @@ The goals are:
 - optional integrations for Arrow and Spring Security
 - a clean path to OSS extraction and reuse
 
+## Installation
+
+The published coordinates use the `io.liquidsoftware` group id.
+
+Example:
+
+```xml
+<dependency>
+    <groupId>io.liquidsoftware</groupId>
+    <artifactId>acl-core</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
+
 ## Modules
 
-The project is split into four modules so users can adopt only the layers they want.
+The project is split into five modules so users can adopt only the layers they want.
 
 ### `acl-core`
 
@@ -92,6 +106,22 @@ Contains:
 - current-subject `Raise`-based permission checks
 
 This module is intentionally separate so Spring users are not forced to take Arrow, and Arrow users are not forced to take Spring.
+
+### `acl-ktor`
+
+Ktor integration without Arrow.
+
+Contains:
+
+- Ktor `ApplicationCall` access-subject resolution
+- `AclKtor` plugin wiring
+- `ApplicationCall.currentSubject()`
+- `ApplicationCall.hasPermission(...)`
+- `ApplicationCall.canRead(...)`
+- `ApplicationCall.canWrite(...)`
+- `ApplicationCall.canManage(...)`
+
+This module exists for Ktor applications that want framework-native access to the current subject without pulling in Spring Security concepts.
 
 ## Core Concepts
 
@@ -242,8 +272,6 @@ It is a focused library for applications that want explicit, embeddable ACL-base
 
 The likely evolution of the project is:
 
-- stabilize these four modules as a standalone OSS project
+- stabilize these modules as a standalone OSS project
 - publish them independently
-- consider additional integrations later, such as `acl-ktor`
-
-`acl-ktor` is intentionally not part of the first extraction. The core and the current Spring integration should be stabilized first.
+- consider additional integrations later where they preserve the small core API surface
