@@ -12,6 +12,7 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - Added the `authorizer { ... }` DSL and `RuleScope<S, R>` for expressing authorization rules directly in domain terms.
 - Added authorizer-first Arrow helpers in `acl-arrow`, including `ensureHasAccess`, `ensureCanRead`, `ensureCanWrite`, and `ensureCanManage`.
 - Added `DenialContext` so access denials can carry structured context without splitting the error type.
+- Added current-subject/current-call authorizer helpers to `acl-ktor`, `acl-spring-security`, and `acl-spring-security-arrow`.
 
 ### Changed
 

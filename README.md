@@ -202,6 +202,7 @@ Use this if you want:
 
 - `SpringSecurityAccessSubjectProvider`
 - `currentSubject()`
+- current-subject authorizer checks like `canRead(resource, authorizer)`
 - low-level `hasPermission(...)` checks against explicit ACL data
 
 ### `acl-spring-security-arrow`
@@ -211,6 +212,7 @@ Bridge module for Spring Security plus Arrow.
 Use this if you want:
 
 - `SpringSecurityAclChecker`
+- current-user authorizer enforcement like `ensureCanRead(resource, authorizer)`
 - current-user `Raise<AuthorizationError>` checks against explicit ACL data
 
 ### `acl-ktor`
@@ -221,6 +223,7 @@ Use this if you want:
 
 - `AclKtor`
 - `ApplicationCall.currentSubject()`
+- current-call authorizer checks like `call.canRead(resource, authorizer)`
 - `ApplicationCall.hasPermission(...)`
 - `ApplicationCall.canRead(...)`
 - `ApplicationCall.canWrite(...)`
@@ -230,15 +233,19 @@ Use this if you want:
 
 ### Spring Security
 
-`acl-spring-security` currently wraps the lower-level ACL engine. It is useful when your application already works with explicit ACL objects.
+`acl-spring-security` can evaluate either:
+
+- authorizer-first policies against the current subject
+- lower-level ACL checks when your application works with explicit ACL objects
 
 ```kotlin
 @Component
 class AppointmentAccessService(
   private val accessSubjects: SpringSecurityAccessSubjectProvider,
+  private val appointmentAccess: Authorizer<AccessSubject, Appointment>,
 ) {
-  suspend fun canCurrentUserRead(acl: Acl): Boolean =
-    accessSubjects.hasPermission(acl, Permission.READ)
+  suspend fun canCurrentUserRead(appointment: Appointment): Boolean =
+    accessSubjects.canRead(appointment, appointmentAccess)
 }
 ```
 
@@ -246,35 +253,35 @@ class AppointmentAccessService(
 
 ```kotlin
 import arrow.core.raise.Raise
-import io.liquidsoftware.common.security.acl.Acl
 import io.liquidsoftware.common.security.acl.AuthorizationError
 
 @Component
 class AppointmentPersistenceAdapter(
   private val acl: SpringSecurityAclChecker,
+  private val appointmentAccess: Authorizer<AccessSubject, Appointment>,
 ) {
   context(_: Raise<AuthorizationError>)
-  suspend fun ensureReadable(resourceAcl: Acl) {
-    acl.ensureCanRead(resourceAcl)
+  suspend fun ensureReadable(appointment: Appointment) {
+    acl.ensureCanRead(appointment, appointmentAccess)
   }
 }
 ```
 
 ### Ktor
 
-`acl-ktor` also wraps the lower-level ACL engine.
+`acl-ktor` can also evaluate authorizers against the current call subject.
 
 ```kotlin
 authenticate {
   get("/documents/{id}") {
-    val documentAcl: Acl = loadDocumentAcl(call.parameters["id"]!!)
+    val document = loadDocument(call.parameters["id"]!!)
 
-    if (!call.canRead(documentAcl)) {
+    if (!call.canRead(document, documentAccess)) {
       call.respond(HttpStatusCode.Forbidden)
       return@get
     }
 
-    call.respond(loadDocument(call.parameters["id"]!!))
+    call.respond(document)
   }
 }
 ```

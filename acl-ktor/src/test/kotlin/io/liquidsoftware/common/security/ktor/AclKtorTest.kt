@@ -19,7 +19,10 @@ import io.liquidsoftware.common.security.acl.ANONYMOUS_SUBJECT_ID
 import io.liquidsoftware.common.security.acl.Acl
 import io.liquidsoftware.common.security.acl.AclChecker
 import io.liquidsoftware.common.security.acl.AclRole
+import io.liquidsoftware.common.security.acl.Authorizer
+import io.liquidsoftware.common.security.acl.Permission
 import io.liquidsoftware.common.security.acl.SecuredResource
+import io.liquidsoftware.common.security.acl.authorizer
 import org.junit.jupiter.api.Test
 
 class AclKtorTest {
@@ -34,6 +37,26 @@ class AclKtorTest {
   ) : SecuredResource {
     override fun acl(): Acl = resourceAcl
   }
+
+  private data class Document(
+    val id: String,
+    val ownerId: String,
+  )
+
+  private val documentAccess: Authorizer<AccessSubject, Document> =
+    authorizer {
+      canManage { subject, document ->
+        subject.userId == document.ownerId || AclChecker.ROLE_ADMIN in subject.roles
+      }
+
+      canWrite { subject, document ->
+        canManage(subject, document) || "ROLE_EDITOR" in subject.roles
+      }
+
+      canRead { subject, document ->
+        canWrite(subject, document) || "ROLE_READER" in subject.roles
+      }
+    }
 
   @Test
   fun `currentSubject returns anonymous subject when no principal exists`() = testApplication {
@@ -269,6 +292,82 @@ class AclKtorTest {
 
     val response = client.get("/write") {
       header(HttpHeaders.Authorization, "Bearer user-token")
+    }
+
+    assertThat(response.bodyAsText()).isEqualTo("false")
+  }
+
+  @Test
+  fun `canRead supports authorizers with current subject`() = testApplication {
+    application {
+      install(Authentication) {
+        bearer("auth-bearer") {
+          authenticate { tokenCredential ->
+            when (tokenCredential.token) {
+              "reader-token" -> TestPrincipal("u_reader", setOf("ROLE_READER"))
+              else -> null
+            }
+          }
+        }
+      }
+
+      install(AclKtor) {
+        resolver = principalAccessSubjectResolver<TestPrincipal>(
+          userId = TestPrincipal::userId,
+          roles = TestPrincipal::roles,
+        )
+      }
+
+      routing {
+        authenticate("auth-bearer") {
+          get("/document/read") {
+            val document = Document(id = "doc-1", ownerId = "u_owner")
+            call.respondText(call.canRead(document, documentAccess).toString())
+          }
+        }
+      }
+    }
+
+    val response = client.get("/document/read") {
+      header(HttpHeaders.Authorization, "Bearer reader-token")
+    }
+
+    assertThat(response.bodyAsText()).isEqualTo("true")
+  }
+
+  @Test
+  fun `hasAccess supports authorizers with denied current subject`() = testApplication {
+    application {
+      install(Authentication) {
+        bearer("auth-bearer") {
+          authenticate { tokenCredential ->
+            when (tokenCredential.token) {
+              "reader-token" -> TestPrincipal("u_reader", setOf("ROLE_READER"))
+              else -> null
+            }
+          }
+        }
+      }
+
+      install(AclKtor) {
+        resolver = principalAccessSubjectResolver<TestPrincipal>(
+          userId = TestPrincipal::userId,
+          roles = TestPrincipal::roles,
+        )
+      }
+
+      routing {
+        authenticate("auth-bearer") {
+          get("/document/write") {
+            val document = Document(id = "doc-1", ownerId = "u_owner")
+            call.respondText(call.hasAccess(document, Permission.WRITE, documentAccess).toString())
+          }
+        }
+      }
+    }
+
+    val response = client.get("/document/write") {
+      header(HttpHeaders.Authorization, "Bearer reader-token")
     }
 
     assertThat(response.bodyAsText()).isEqualTo("false")

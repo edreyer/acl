@@ -8,6 +8,7 @@ import io.liquidsoftware.common.security.acl.ANONYMOUS_SUBJECT_ID
 import io.liquidsoftware.common.security.acl.AccessSubject
 import io.liquidsoftware.common.security.acl.Acl
 import io.liquidsoftware.common.security.acl.AclChecker
+import io.liquidsoftware.common.security.acl.Authorizer
 import io.liquidsoftware.common.security.acl.Permission
 import io.liquidsoftware.common.security.acl.SecuredResource
 
@@ -49,6 +50,18 @@ fun ApplicationCall.currentSubject(): AccessSubject =
 suspend fun ApplicationCall.hasPermission(acl: Acl, permission: Permission): Boolean =
   application.aclAccessSubjectProvider().hasPermission(this, acl, permission)
 
+/**
+ * Evaluates an [Authorizer] against the current call subject.
+ *
+ * This is the domain-facing policy path. For explicit [Acl] checks, use
+ * [hasPermission].
+ */
+suspend fun <R> ApplicationCall.hasAccess(
+  resource: R,
+  permission: Permission,
+  authorizer: Authorizer<AccessSubject, R>,
+): Boolean = application.aclAccessSubjectProvider().hasAccess(this, resource, permission, authorizer)
+
 suspend fun ApplicationCall.hasPermission(resource: SecuredResource, permission: Permission): Boolean =
   hasPermission(resource.acl(), permission)
 
@@ -58,14 +71,32 @@ suspend fun ApplicationCall.canRead(acl: Acl): Boolean =
 suspend fun ApplicationCall.canRead(resource: SecuredResource): Boolean =
   hasPermission(resource, Permission.READ)
 
+/**
+ * Domain-facing convenience form of [hasAccess] for [Permission.READ].
+ */
+suspend fun <R> ApplicationCall.canRead(resource: R, authorizer: Authorizer<AccessSubject, R>): Boolean =
+  hasAccess(resource, Permission.READ, authorizer)
+
 suspend fun ApplicationCall.canWrite(acl: Acl): Boolean =
   hasPermission(acl, Permission.WRITE)
 
 suspend fun ApplicationCall.canWrite(resource: SecuredResource): Boolean =
   hasPermission(resource, Permission.WRITE)
 
+/**
+ * Domain-facing convenience form of [hasAccess] for [Permission.WRITE].
+ */
+suspend fun <R> ApplicationCall.canWrite(resource: R, authorizer: Authorizer<AccessSubject, R>): Boolean =
+  hasAccess(resource, Permission.WRITE, authorizer)
+
 suspend fun ApplicationCall.canManage(acl: Acl): Boolean =
   hasPermission(acl, Permission.MANAGE)
 
 suspend fun ApplicationCall.canManage(resource: SecuredResource): Boolean =
   hasPermission(resource, Permission.MANAGE)
+
+/**
+ * Domain-facing convenience form of [hasAccess] for [Permission.MANAGE].
+ */
+suspend fun <R> ApplicationCall.canManage(resource: R, authorizer: Authorizer<AccessSubject, R>): Boolean =
+  hasAccess(resource, Permission.MANAGE, authorizer)

@@ -3,6 +3,7 @@ package io.liquidsoftware.common.security.spring
 import io.liquidsoftware.common.security.acl.AccessSubject
 import io.liquidsoftware.common.security.acl.Acl
 import io.liquidsoftware.common.security.acl.AclChecker
+import io.liquidsoftware.common.security.acl.Authorizer
 import io.liquidsoftware.common.security.acl.Permission
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
@@ -21,4 +22,25 @@ class SpringSecurityAccessSubjectProvider(
 
   suspend fun hasPermission(acl: Acl, permission: Permission): Boolean =
     hasPermission(acl, currentSubject(), permission)
+
+  suspend fun <R> hasAccess(
+    resource: R,
+    permission: Permission,
+    authorizer: Authorizer<AccessSubject, R>,
+  ): Boolean = authorizer.hasAccess(currentSubject(), resource, permission)
+
+  suspend fun <R> canRead(
+    resource: R,
+    authorizer: Authorizer<AccessSubject, R>,
+  ): Boolean = hasAccess(resource, Permission.READ, authorizer)
+
+  suspend fun <R> canWrite(
+    resource: R,
+    authorizer: Authorizer<AccessSubject, R>,
+  ): Boolean = hasAccess(resource, Permission.WRITE, authorizer)
+
+  suspend fun <R> canManage(
+    resource: R,
+    authorizer: Authorizer<AccessSubject, R>,
+  ): Boolean = hasAccess(resource, Permission.MANAGE, authorizer)
 }
