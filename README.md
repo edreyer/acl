@@ -54,6 +54,9 @@ Pure Kotlin authorization core.
 
 Contains:
 
+- `Authorizer<S, R>`
+- `RuleScope<S, R>`
+- `authorizer { ... }`
 - `Acl`
 - `AclRole`
 - `Permission`
@@ -125,6 +128,62 @@ This module exists for Ktor applications that want framework-native access to th
 
 ## Core Concepts
 
+### Domain-Facing Authorizer
+
+The primary API is a domain-facing authorizer.
+
+```kotlin
+enum class Role {
+  ADMIN,
+  DOCUMENT_READER,
+  DOCUMENT_EDITOR,
+}
+
+data class User(
+  val id: String,
+  val roles: Set<Role>,
+)
+
+data class Document(
+  val id: String,
+  val ownerId: String,
+)
+
+val documentAccess = authorizer<User, Document> {
+  canManage { user, document ->
+    user.id == document.ownerId || Role.ADMIN in user.roles
+  }
+
+  canWrite { user, document ->
+    canManage(user, document) || Role.DOCUMENT_EDITOR in user.roles
+  }
+
+  canRead { user, document ->
+    canWrite(user, document) || Role.DOCUMENT_READER in user.roles
+  }
+}
+```
+
+This lets application code ask the real business question directly:
+
+```kotlin
+val canRead = documentAccess.canRead(user, document)
+val canWrite = documentAccess.canWrite(user, document)
+val canManage = documentAccess.canManage(user, document)
+```
+
+The rule scope also lets permissions build on each other:
+
+- `canWrite` can reuse `canManage`
+- `canRead` can reuse `canWrite`
+- `hasAccess(subject, resource, permission)` is available when you need the generic form
+
+## Low-Level Engine
+
+Most applications should start with `Authorizer<S, R>`.
+
+The lower-level ACL types are still available when you want to model explicit ACL data directly or integrate with an existing ACL representation.
+
 ### Subject
 
 A subject is the actor attempting to do something.
@@ -163,28 +222,7 @@ val allowed = checker.hasPermission(
 )
 ```
 
-## Examples
-
-### Example 1: Core Only
-
-```kotlin
-val acl = acl("vehicle-42") {
-  manager("u_owner")
-  reader("u_service-advisor")
-}
-
-val checker = AclChecker()
-
-val subject = AccessSubject(
-  userId = "u_service-advisor",
-  roles = emptySet()
-)
-
-val canRead = checker.hasPermission(acl, subject, Permission.READ)
-val canManage = checker.hasPermission(acl, subject, Permission.MANAGE)
-```
-
-### Example 2: Core With `SecuredResource`
+### `SecuredResource`
 
 ```kotlin
 data class Appointment(
@@ -197,7 +235,9 @@ data class Appointment(
 
 This keeps the resource authorization data close to the domain model without forcing the rest of the model to know anything about Spring or Arrow.
 
-### Example 3: Arrow Integration
+## Integration Examples
+
+### Arrow Integration
 
 ```kotlin
 import arrow.core.Either
@@ -217,7 +257,7 @@ suspend fun updateAppointment(
 
 This keeps authorization denial as a typed value rather than throwing exceptions for expected failures.
 
-### Example 4: Spring Security Without Arrow
+### Spring Security Without Arrow
 
 ```kotlin
 @Component
@@ -229,7 +269,7 @@ class AppointmentAccessService(
 }
 ```
 
-### Example 5: Spring Security With Arrow
+### Spring Security With Arrow
 
 ```kotlin
 import arrow.core.raise.Raise
