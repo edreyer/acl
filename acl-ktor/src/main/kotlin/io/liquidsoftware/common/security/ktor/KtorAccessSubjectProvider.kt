@@ -5,6 +5,7 @@ import io.ktor.util.AttributeKey
 import io.liquidsoftware.common.security.acl.AccessSubject
 import io.liquidsoftware.common.security.acl.Acl
 import io.liquidsoftware.common.security.acl.AclChecker
+import io.liquidsoftware.common.security.acl.Authorizer
 import io.liquidsoftware.common.security.acl.Permission
 
 private val CurrentAccessSubjectKey = AttributeKey<AccessSubject>("acl.current-subject")
@@ -24,4 +25,18 @@ class KtorAccessSubjectProvider(
 
   suspend fun hasPermission(call: ApplicationCall, acl: Acl, permission: Permission): Boolean =
     aclChecker.hasPermission(acl, currentSubject(call), permission)
+
+  /**
+   * Evaluates a domain-facing [Authorizer] against the current call subject.
+   *
+   * This intentionally bypasses [AclChecker]. `hasPermission(...)` is the
+   * low-level ACL-engine path for explicit [Acl] data, while `hasAccess(...)`
+   * is the authorizer path for rule-based policies over domain resources.
+   */
+  suspend fun <R> hasAccess(
+    call: ApplicationCall,
+    resource: R,
+    permission: Permission,
+    authorizer: Authorizer<AccessSubject, R>,
+  ): Boolean = authorizer.hasAccess(currentSubject(call), resource, permission)
 }

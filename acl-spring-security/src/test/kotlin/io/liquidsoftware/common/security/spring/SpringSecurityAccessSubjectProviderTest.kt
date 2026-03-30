@@ -7,7 +7,9 @@ import io.liquidsoftware.common.security.acl.ANONYMOUS_SUBJECT_ID
 import io.liquidsoftware.common.security.acl.AccessSubject
 import io.liquidsoftware.common.security.acl.Acl
 import io.liquidsoftware.common.security.acl.AclRole
+import io.liquidsoftware.common.security.acl.Authorizer
 import io.liquidsoftware.common.security.acl.Permission
+import io.liquidsoftware.common.security.acl.authorizer
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -19,9 +21,29 @@ import org.springframework.security.core.userdetails.User
 
 class SpringSecurityAccessSubjectProviderTest {
 
+  private data class Document(
+    val id: String,
+    val ownerId: String,
+  )
+
   private val provider = SpringSecurityAccessSubjectProvider(
     AuthenticationAccessSubjectResolver(::resolveSubject),
   )
+
+  private val documentAccess: Authorizer<AccessSubject, Document> =
+    authorizer {
+      canManage { subject, document ->
+        subject.userId == document.ownerId || "ROLE_ADMIN" in subject.roles
+      }
+
+      canWrite { subject, document ->
+        canManage(subject, document) || "ROLE_EDITOR" in subject.roles
+      }
+
+      canRead { subject, document ->
+        canWrite(subject, document) || "ROLE_READER" in subject.roles
+      }
+    }
 
   @AfterEach
   fun clearSecurityContext() {
@@ -85,6 +107,26 @@ class SpringSecurityAccessSubjectProviderTest {
     val result = provider.hasPermission(acl, Permission.MANAGE)
 
     assertThat(result).isEqualTo(true)
+  }
+
+  @Test
+  fun `canRead supports authorizers with current subject`() = runBlocking {
+    authenticate("u_reader", "ROLE_READER")
+    val document = Document(id = "doc-1", ownerId = "u_owner")
+
+    val result = provider.canRead(document, documentAccess)
+
+    assertThat(result).isEqualTo(true)
+  }
+
+  @Test
+  fun `hasAccess supports authorizers with current subject`() = runBlocking {
+    authenticate("u_reader", "ROLE_READER")
+    val document = Document(id = "doc-1", ownerId = "u_owner")
+
+    val result = provider.hasAccess(document, Permission.WRITE, documentAccess)
+
+    assertThat(result).isEqualTo(false)
   }
 
   private fun authenticate(userId: String, vararg roles: String) {

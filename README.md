@@ -1,40 +1,16 @@
 # ACL
 
-`acl` is a small Kotlin-first access control library for applications that want authorization to stay explicit, typed, and close to the domain model.
+`acl` is a small Kotlin-first authorization library.
 
-It exists to solve a common problem in backend systems: authorization logic often becomes scattered across controllers, services, framework annotations, and exception handlers. Over time that usually turns into stringly checks, duplicated policy logic, and code paths where "not authorized" is treated as an exceptional condition even though it is a normal business outcome.
+Its main goal is simple application code:
 
-This project takes a different approach:
+```kotlin
+val canRead = documentAccess.canRead(user, document)
+```
 
-- model resources, subjects, roles, and permissions explicitly
-- keep the core policy engine framework-neutral
-- support functional Kotlin code with Arrow, but do not require Arrow
-- support Spring Security, but do not require Spring
-- keep "permission denied" as data instead of making exceptions the default
-
-The current design is intentionally small. It is meant to be understandable, embeddable, and easy to integrate into a modular monolith or a service-based system.
-
-## Why It Exists
-
-This library exists to provide a clean middle ground between:
-
-- hand-rolled ACL code scattered through an application
-- heavy policy engines or infrastructure that are too large for the problem
-- framework-specific authorization APIs that are hard to reuse outside one stack
-
-The goals are:
-
-- explicit authorization models
-- type-safe subjects and permissions
-- composable permission checks
-- optional integrations for Arrow and Spring Security
-- a clean path to OSS extraction and reuse
+Instead of pushing every caller down to low-level ACL primitives, the library now supports a domain-facing `Authorizer<S, R>` API in `acl-core`. If you prefer Arrow, the same policy can be enforced with typed failures instead of exceptions.
 
 ## Installation
-
-The published coordinates use the `io.liquidsoftware` group id.
-
-Example:
 
 ```xml
 <dependency>
@@ -44,160 +20,79 @@ Example:
 </dependency>
 ```
 
-## Modules
+## Quick Start
 
-The project is split into five modules so users can adopt only the layers they want.
-
-### `acl-core`
-
-Pure Kotlin authorization core.
-
-Contains:
-
-- `Acl`
-- `AclRole`
-- `Permission`
-- `AccessSubject`
-- `AuthorizationError`
-- `PermissionDenied`
-- `SecuredResource`
-- `AclChecker`
-- ACL builder DSL via `acl(resourceId) { ... }`
-
-No Arrow. No Spring. No current-user lookup.
-
-This is the policy engine and model layer.
-
-### `acl-arrow`
-
-Arrow integration for the core.
-
-Contains:
-
-- `Raise<AuthorizationError>`-based enforcement helpers
-- `ensurePermission(...)`
-- `ensureCanRead(...)`
-- `ensureCanWrite(...)`
-- `ensureCanManage(...)`
-- `AccessSubject` extension helpers
-- `SecuredResource` extension overloads
-
-This module exists so Arrow users get a natural `Raise` API without forcing Arrow on everyone else.
-
-### `acl-spring-security`
-
-Spring Security integration without Arrow.
-
-Contains:
-
-- current-subject resolution from `SecurityContextHolder`
-- `AuthenticationAccessSubjectResolver`
-- `SpringSecurityAccessSubjectProvider`
-
-This module exists for users who want to integrate ACL with Spring Security but prefer boolean/value-based APIs over Arrow.
-
-### `acl-spring-security-arrow`
-
-Bridge module for users who want both Spring Security and Arrow.
-
-Contains:
-
-- `SpringSecurityAclChecker`
-- current-subject `Raise`-based permission checks
-
-This module is intentionally separate so Spring users are not forced to take Arrow, and Arrow users are not forced to take Spring.
-
-### `acl-ktor`
-
-Ktor integration without Arrow.
-
-Contains:
-
-- Ktor `ApplicationCall` access-subject resolution
-- `AclKtor` plugin wiring
-- `ApplicationCall.currentSubject()`
-- `ApplicationCall.hasPermission(...)`
-- `ApplicationCall.canRead(...)`
-- `ApplicationCall.canWrite(...)`
-- `ApplicationCall.canManage(...)`
-
-This module exists for Ktor applications that want framework-native access to the current subject without pulling in Spring Security concepts.
-
-## Core Concepts
-
-### Subject
-
-A subject is the actor attempting to do something.
+Start by defining an authorizer for your domain types.
 
 ```kotlin
-val subject = AccessSubject(
-  userId = "u_123",
-  roles = setOf("ROLE_USER")
-)
-```
+import io.liquidsoftware.common.security.acl.authorizer
 
-### Resource ACL
-
-An ACL describes who can do what on a specific resource.
-
-```kotlin
-val appointmentAcl = acl("appointment-123") {
-  manager("u_owner")
-  writer("u_assistant")
-  reader("u_auditor")
-  anonymousReader()
-}
-```
-
-### Permission Evaluation
-
-The core checker answers a simple question: can this subject perform this permission on this resource?
-
-```kotlin
-val checker = AclChecker()
-
-val allowed = checker.hasPermission(
-  acl = appointmentAcl,
-  subject = subject,
-  permission = Permission.READ
-)
-```
-
-## Examples
-
-### Example 1: Core Only
-
-```kotlin
-val acl = acl("vehicle-42") {
-  manager("u_owner")
-  reader("u_service-advisor")
+/**
+ * Application roles that influence document access.
+ */
+enum class Role {
+  ADMIN,
+  DOCUMENT_READER,
+  DOCUMENT_EDITOR,
 }
 
-val checker = AclChecker()
-
-val subject = AccessSubject(
-  userId = "u_service-advisor",
-  roles = emptySet()
-)
-
-val canRead = checker.hasPermission(acl, subject, Permission.READ)
-val canManage = checker.hasPermission(acl, subject, Permission.MANAGE)
-```
-
-### Example 2: Core With `SecuredResource`
-
-```kotlin
-data class Appointment(
+/**
+ * The actor attempting to access a document.
+ */
+data class User(
   val id: String,
-  private val appointmentAcl: Acl,
-) : SecuredResource {
-  override fun acl(): Acl = appointmentAcl
+  val roles: Set<Role>,
+)
+
+/**
+ * A document resource. The owner can fully manage it.
+ */
+data class Document(
+  val id: String,
+  val ownerId: String,
+)
+
+/**
+ * Document authorization policy.
+ *
+ * - `canManage`: owners and admins can do anything
+ * - `canWrite`: managers and editors can modify documents
+ * - `canRead`: writers and readers can view documents
+ */
+val documentAccess = authorizer<User, Document> {
+  canManage { user, document ->
+    user.id == document.ownerId || Role.ADMIN in user.roles
+  }
+
+  canWrite { user, document ->
+    canManage(user, document) || Role.DOCUMENT_EDITOR in user.roles
+  }
+
+  canRead { user, document ->
+    canWrite(user, document) || Role.DOCUMENT_READER in user.roles
+  }
 }
 ```
 
-This keeps the resource authorization data close to the domain model without forcing the rest of the model to know anything about Spring or Arrow.
+Use it directly from application code:
 
-### Example 3: Arrow Integration
+```kotlin
+val canRead = documentAccess.canRead(user, document)
+val canWrite = documentAccess.canWrite(user, document)
+val canManage = documentAccess.canManage(user, document)
+```
+
+This keeps the policy close to the domain model:
+
+- `canManage` expresses the strongest rule
+- `canWrite` can build on `canManage`
+- `canRead` can build on `canWrite`
+
+If a permission rule is not defined, access is denied by default.
+
+## Arrow
+
+Add `acl-arrow` if you want typed enforcement with Arrow `Raise`.
 
 ```kotlin
 import arrow.core.Either
@@ -205,31 +100,156 @@ import arrow.core.raise.either
 import io.liquidsoftware.common.security.acl.AuthorizationError
 import io.liquidsoftware.common.security.acl.arrow.ensureCanWrite
 
-suspend fun updateAppointment(
-  checker: AclChecker,
-  subject: AccessSubject,
-  acl: Acl,
+suspend fun updateDocument(
+  user: User,
+  document: Document,
 ): Either<AuthorizationError, Unit> =
-  either {
-    checker.ensureCanWrite(subject, acl)
+  with(documentAccess) {
+    either {
+      user.ensureCanWrite(document)
+    }
   }
 ```
 
-This keeps authorization denial as a typed value rather than throwing exceptions for expected failures.
+Denials are represented as a single type:
 
-### Example 4: Spring Security Without Arrow
+```kotlin
+AccessDenied(permission, context)
+```
+
+`Authorizer`-based checks usually return `AccessDenied(permission)` with `DenialContext.Unknown`.
+Low-level `AclChecker`-based checks return `AccessDenied(permission, DenialContext.Acl(resourceId, subjectId))`.
+
+Equivalent explicit form:
+
+```kotlin
+either<AuthorizationError, Unit> {
+  documentAccess.ensureCanWrite(user, document)
+}
+```
+
+## Optional App-Layer Sugar
+
+If you want `user.canRead(document)`, keep that as a tiny application-layer extension:
+
+```kotlin
+import io.liquidsoftware.common.security.acl.Authorizer
+
+context(access: Authorizer<User, Document>)
+suspend fun User.canRead(document: Document): Boolean =
+  access.canRead(this, document)
+
+context(access: Authorizer<User, Document>)
+suspend fun User.canWrite(document: Document): Boolean =
+  access.canWrite(this, document)
+
+context(access: Authorizer<User, Document>)
+suspend fun User.canManage(document: Document): Boolean =
+  access.canManage(this, document)
+```
+
+Usage:
+
+```kotlin
+with(documentAccess) {
+  val canRead = user.canRead(document)
+}
+```
+
+This keeps your domain types free of framework or library interfaces while still reading naturally.
+
+## Modules
+
+### `acl-core`
+
+Pure Kotlin authorization core.
+
+Use this if you want:
+
+- `Authorizer<S, R>`
+- `authorizer { ... }`
+- `canRead`, `canWrite`, `canManage`, and `hasAccess`
+- low-level ACL primitives when you need them
+
+Key types:
+
+- `Authorizer<S, R>`
+- `RuleScope<S, R>`
+- `AccessDenied`
+- `AuthorizationError`
+- `DenialContext`
+- `Acl`
+- `AclChecker`
+- `AccessSubject`
+
+### `acl-arrow`
+
+Arrow integration for both API layers.
+
+Use this if you want:
+
+- `Authorizer.ensureCanRead(...)`
+- `Authorizer.ensureCanWrite(...)`
+- `Authorizer.ensureCanManage(...)`
+- `Authorizer.ensureHasAccess(...)`
+- low-level `AclChecker.ensureCanRead(...)` and related helpers
+
+### `acl-spring-security`
+
+Spring Security integration for resolving the current subject as an `AccessSubject`.
+
+Use this if you want:
+
+- `SpringSecurityAccessSubjectProvider`
+- `currentSubject()`
+- current-subject authorizer checks like `canRead(resource, authorizer)`
+- low-level `hasPermission(...)` checks against explicit ACL data
+
+### `acl-spring-security-arrow`
+
+Bridge module for Spring Security plus Arrow.
+
+Use this if you want:
+
+- `SpringSecurityAclChecker`
+- current-user authorizer enforcement like `ensureCanRead(resource, authorizer)`
+- current-user `Raise<AuthorizationError>` checks against explicit ACL data
+
+### `acl-ktor`
+
+Ktor integration for resolving the current subject on `ApplicationCall`.
+
+Use this if you want:
+
+- `AclKtor`
+- `ApplicationCall.currentSubject()`
+- current-call authorizer checks like `call.canRead(resource, authorizer)`
+- `ApplicationCall.hasPermission(...)`
+- `ApplicationCall.canRead(...)`
+- `ApplicationCall.canWrite(...)`
+- `ApplicationCall.canManage(...)`
+
+## Framework Examples
+
+### Spring Security
+
+`acl-spring-security` can evaluate either:
+
+- authorizer-first policies against the current subject
+- lower-level ACL checks when your application works with explicit ACL objects
 
 ```kotlin
 @Component
 class AppointmentAccessService(
   private val accessSubjects: SpringSecurityAccessSubjectProvider,
+  private val appointmentAccess: Authorizer<AccessSubject, Appointment>,
 ) {
-  suspend fun canCurrentUserRead(acl: Acl): Boolean =
-    accessSubjects.hasPermission(acl, Permission.READ)
+  suspend fun canCurrentUserRead(appointment: Appointment): Boolean =
+    accessSubjects.canRead(appointment, appointmentAccess)
 }
 ```
 
-### Example 5: Spring Security With Arrow
+### Spring Security With Arrow
 
 ```kotlin
 import arrow.core.raise.Raise
@@ -238,40 +258,80 @@ import io.liquidsoftware.common.security.acl.AuthorizationError
 @Component
 class AppointmentPersistenceAdapter(
   private val acl: SpringSecurityAclChecker,
+  private val appointmentAccess: Authorizer<AccessSubject, Appointment>,
 ) {
   context(_: Raise<AuthorizationError>)
-  suspend fun ensureReadable(resourceAcl: Acl) {
-    acl.ensureCanRead(resourceAcl)
+  suspend fun ensureReadable(appointment: Appointment) {
+    acl.ensureCanRead(appointment, appointmentAccess)
   }
 }
 ```
 
-This is the most ergonomic option for applications already using both Spring Security and Arrow.
+### Ktor
 
-## Design Principles
+`acl-ktor` can also evaluate authorizers against the current call subject.
 
-- `acl-core` stays free of frameworks and Arrow.
-- Authorization denial is expected data, not exceptional control flow.
-- Current-subject resolution belongs in adapters, not in the core policy engine.
-- Spring integrations should feel natural to Spring users without forcing functional styles.
-- Arrow integrations should feel natural to Arrow users without leaking Arrow into the core.
-- Public APIs should remain small, readable, and Kotlin-idiomatic.
+```kotlin
+authenticate {
+  get("/documents/{id}") {
+    val document = loadDocument(call.parameters["id"]!!)
 
-## What This Project Is Not
+    if (!call.canRead(document, documentAccess)) {
+      call.respond(HttpStatusCode.Forbidden)
+      return@get
+    }
 
-This project is not trying to be:
+    call.respond(document)
+  }
+}
+```
 
-- a full policy language
-- a distributed authorization server
-- a database-backed ACL subsystem
-- a replacement for every authorization use case
+## Advanced: Explicit ACL Data
 
-It is a focused library for applications that want explicit, embeddable ACL-based authorization with optional integration layers.
+If your application already stores or constructs explicit ACL data, the lower-level engine is still available.
 
-## Likely Future Scope
+```kotlin
+import io.liquidsoftware.common.security.acl.AccessSubject
+import io.liquidsoftware.common.security.acl.AclChecker
+import io.liquidsoftware.common.security.acl.Permission
+import io.liquidsoftware.common.security.acl.acl
 
-The likely evolution of the project is:
+val subject = AccessSubject(
+  userId = "u_123",
+  roles = setOf("ROLE_USER"),
+)
 
-- stabilize these modules as a standalone OSS project
-- publish them independently
-- consider additional integrations later where they preserve the small core API surface
+val documentAcl = acl("document-42") {
+  manager("u_owner")
+  writer("u_editor")
+  reader("u_auditor")
+}
+
+val checker = AclChecker()
+
+val allowed = checker.hasPermission(
+  acl = documentAcl,
+  subject = subject,
+  permission = Permission.READ,
+)
+```
+
+Low-level denials use the same `AccessDenied` type, but with ACL-specific context:
+
+```kotlin
+AccessDenied(
+  permission = Permission.READ,
+  context = DenialContext.Acl(
+    resourceId = "document-42",
+    subjectId = "u_123",
+  ),
+)
+```
+
+## Design Notes
+
+- `acl-core` stays framework-neutral
+- Arrow is optional
+- Spring Security is optional
+- current-user lookup belongs in integration modules, not in the core
+- authorization denial is treated as data, not as an exception by default
