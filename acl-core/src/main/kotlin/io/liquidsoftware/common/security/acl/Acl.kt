@@ -9,15 +9,31 @@ enum class Permission {
 }
 
 sealed interface AuthorizationError {
-  val resourceId: String
   val permission: Permission
-  val subjectId: String
 }
 
-data class PermissionDenied(
-  override val resourceId: String,
+/**
+ * Additional denial details when the failing check came from a concrete ACL target.
+ */
+sealed interface DenialContext {
+  data object Unknown : DenialContext
+
+  data class Acl(
+    val resourceId: String,
+    val subjectId: String,
+  ) : DenialContext
+}
+
+/**
+ * The single denial type raised by this library.
+ *
+ * Authorizer-based checks usually return [DenialContext.Unknown].
+ * Low-level ACL checks can attach [DenialContext.Acl] with the concrete resource
+ * and subject identifiers that participated in the failed evaluation.
+ */
+data class AccessDenied(
   override val permission: Permission,
-  override val subjectId: String,
+  val context: DenialContext = DenialContext.Unknown,
 ) : AuthorizationError
 
 data class AccessSubject(

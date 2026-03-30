@@ -51,21 +51,22 @@ If your key is protected by a passphrase, make sure `gpg-agent` is available bef
 ## Release Steps
 
 1. Ensure the working tree is clean.
-2. Confirm the root project version is the intended release version.
-3. Run a full local verification build:
+2. Confirm `CHANGELOG.md` reflects the release, including any compatibility notes.
+3. Confirm the root project version is the intended release version.
+4. Run a full local verification build:
 
 ```bash
 mvn clean verify
 ```
 
-4. Create the release tag that matches the POM SCM metadata:
+5. Create the release tag that matches the POM SCM metadata:
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-5. Publish the release bundle to Central:
+6. Publish the release bundle to Central:
 
 ```bash
 mvn -Pcentral-publish deploy

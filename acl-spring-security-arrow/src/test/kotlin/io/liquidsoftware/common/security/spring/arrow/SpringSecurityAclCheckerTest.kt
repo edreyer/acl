@@ -6,12 +6,13 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import io.liquidsoftware.common.security.acl.ANONYMOUS_SUBJECT_ID
+import io.liquidsoftware.common.security.acl.AccessDenied
 import io.liquidsoftware.common.security.acl.Acl
 import io.liquidsoftware.common.security.acl.AclChecker
 import io.liquidsoftware.common.security.acl.AclRole
 import io.liquidsoftware.common.security.acl.AuthorizationError
+import io.liquidsoftware.common.security.acl.DenialContext
 import io.liquidsoftware.common.security.acl.Permission
-import io.liquidsoftware.common.security.acl.PermissionDenied
 import io.liquidsoftware.common.security.spring.AuthenticationAccessSubjectResolver
 import io.liquidsoftware.common.security.spring.SpringSecurityAccessSubjectProvider
 import kotlinx.coroutines.runBlocking
@@ -60,7 +61,7 @@ class SpringSecurityAclCheckerTest {
   }
 
   @Test
-  fun `ensureCanWrite uses current subject and raises PermissionDenied for denied access`() = runBlocking {
+  fun `ensureCanWrite uses current subject and raises AccessDenied with acl context for denied access`() = runBlocking {
     authenticate("u_test-user", "ROLE_USER")
     val acl = Acl.of("a_test", "u_test-user", AclRole.READER)
 
@@ -69,10 +70,14 @@ class SpringSecurityAclCheckerTest {
     }
 
     val error = (result as Either.Left).value
-    assertThat(error).isInstanceOf(PermissionDenied::class)
-    assertThat(error.resourceId).isEqualTo("a_test")
+    assertThat(error).isInstanceOf(AccessDenied::class)
+    error as AccessDenied
+    val context = error.context
+    assertThat(context).isInstanceOf(DenialContext.Acl::class)
+    context as DenialContext.Acl
+    assertThat(context.resourceId).isEqualTo("a_test")
     assertThat(error.permission).isEqualTo(Permission.WRITE)
-    assertThat(error.subjectId).isEqualTo("u_test-user")
+    assertThat(context.subjectId).isEqualTo("u_test-user")
   }
 
   @Test
@@ -88,7 +93,7 @@ class SpringSecurityAclCheckerTest {
   }
 
   @Test
-  fun `ensureCanRead raises PermissionDenied for anonymous subject without access`() = runBlocking {
+  fun `ensureCanRead raises AccessDenied with acl context for anonymous subject without access`() = runBlocking {
     val acl = Acl.of("a_test", "someone-else", AclRole.READER)
 
     val result = either<AuthorizationError, Unit> {
@@ -96,10 +101,14 @@ class SpringSecurityAclCheckerTest {
     }
 
     val error = (result as Either.Left).value
-    assertThat(error).isInstanceOf(PermissionDenied::class)
-    assertThat(error.resourceId).isEqualTo("a_test")
+    assertThat(error).isInstanceOf(AccessDenied::class)
+    error as AccessDenied
+    val context = error.context
+    assertThat(context).isInstanceOf(DenialContext.Acl::class)
+    context as DenialContext.Acl
+    assertThat(context.resourceId).isEqualTo("a_test")
     assertThat(error.permission).isEqualTo(Permission.READ)
-    assertThat(error.subjectId).isEqualTo(ANONYMOUS_SUBJECT_ID)
+    assertThat(context.subjectId).isEqualTo(ANONYMOUS_SUBJECT_ID)
   }
 
   private fun authenticate(userId: String, vararg roles: String) {
