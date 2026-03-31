@@ -1,6 +1,5 @@
 package io.liquidsoftware.common.security.acl
 
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -11,11 +10,11 @@ class AclCheckerTest {
   private val aclChecker = AclChecker()
 
   @Test
-  fun `manager can manage owned resource`() = runBlocking {
+  fun `manager can manage owned resource`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.MANAGER)
     val subject = AccessSubject("user-1", emptySet())
 
-    assertTrue(aclChecker.hasPermission(acl, subject, Permission.MANAGE))
+    assertTrue(aclChecker.hasPermission(subject, acl, Permission.MANAGE))
   }
 
   @Test
@@ -48,61 +47,82 @@ class AclCheckerTest {
   }
 
   @Test
-  fun `reader cannot write owned resource`() = runBlocking {
-    val acl = Acl.of("appointment-1", "user-1", AclRole.READER)
-    val subject = AccessSubject("user-1", emptySet())
+  fun `acl builder supports anonymous writer and manager access`() {
+    val writerAcl = acl("appointment-1") {
+      anonymousWriter()
+    }
+    val managerAcl = acl("appointment-2") {
+      anonymousManager()
+    }
 
-    assertFalse(aclChecker.hasPermission(acl, subject, Permission.WRITE))
+    assertEquals(AclRole.WRITER, writerAcl.userRoleMap[ANONYMOUS_SUBJECT_ID])
+    assertEquals(AclRole.MANAGER, managerAcl.userRoleMap[ANONYMOUS_SUBJECT_ID])
   }
 
   @Test
-  fun `anonymous subject can read resource with anonymous reader access`() = runBlocking {
+  fun `reader cannot write owned resource`() {
+    val acl = Acl.of("appointment-1", "user-1", AclRole.READER)
+    val subject = AccessSubject("user-1", emptySet())
+
+    assertFalse(aclChecker.hasPermission(subject, acl, Permission.WRITE))
+  }
+
+  @Test
+  fun `anonymous subject can read resource with anonymous reader access`() {
     val acl = Acl(
       resourceId = "appointment-1",
       userRoleMap = mapOf(ANONYMOUS_SUBJECT_ID to AclRole.READER),
     )
     val subject = AccessSubject(ANONYMOUS_SUBJECT_ID, emptySet())
 
-    assertTrue(aclChecker.hasPermission(acl, subject, Permission.READ))
+    assertTrue(aclChecker.hasPermission(subject, acl, Permission.READ))
   }
 
   @Test
-  fun `admin bypass grants access`() = runBlocking {
+  fun `admin bypass grants access`() {
     val acl = Acl.of("appointment-1", "someone-else", AclRole.READER)
     val subject = AccessSubject("admin-user", setOf(AclChecker.ROLE_ADMIN))
 
-    assertTrue(aclChecker.hasPermission(acl, subject, Permission.MANAGE))
+    assertTrue(aclChecker.hasPermission(subject, acl, Permission.MANAGE))
   }
 
   @Test
-  fun `writer can read and write owned resource`() = runBlocking {
+  fun `system bypass grants access`() {
+    val acl = Acl.of("appointment-1", "someone-else", AclRole.READER)
+    val subject = AccessSubject("system-user", setOf(AclChecker.ROLE_SYSTEM))
+
+    assertTrue(aclChecker.hasPermission(subject, acl, Permission.MANAGE))
+  }
+
+  @Test
+  fun `writer can read and write owned resource`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.WRITER)
     val subject = AccessSubject("user-1", emptySet())
 
-    assertTrue(aclChecker.hasPermission(acl, subject, Permission.READ))
-    assertTrue(aclChecker.hasPermission(acl, subject, Permission.WRITE))
+    assertTrue(aclChecker.hasPermission(subject, acl, Permission.READ))
+    assertTrue(aclChecker.hasPermission(subject, acl, Permission.WRITE))
   }
 
   @Test
-  fun `authenticated subject falls back to anonymous access when direct role is missing`() = runBlocking {
+  fun `authenticated subject falls back to anonymous access when direct role is missing`() {
     val acl = acl("appointment-1") {
       anonymousReader()
     }
     val subject = AccessSubject("user-1", emptySet())
 
-    assertTrue(aclChecker.hasPermission(acl, subject, Permission.READ))
+    assertTrue(aclChecker.hasPermission(subject, acl, Permission.READ))
   }
 
   @Test
-  fun `subject without direct or anonymous access is denied`() = runBlocking {
+  fun `subject without direct or anonymous access is denied`() {
     val acl = Acl.of("appointment-1", "someone-else", AclRole.READER)
     val subject = AccessSubject("user-1", emptySet())
 
-    assertFalse(aclChecker.hasPermission(acl, subject, Permission.READ))
+    assertFalse(aclChecker.hasPermission(subject, acl, Permission.READ))
   }
 
   @Test
-  fun `checker supports custom anonymous subject id`() = runBlocking {
+  fun `checker supports custom anonymous subject id`() {
     val customChecker = AclChecker(anonymousSubjectId = "u_guest")
     val acl = Acl(
       resourceId = "appointment-1",
@@ -110,15 +130,25 @@ class AclCheckerTest {
     )
     val subject = AccessSubject("user-1", emptySet())
 
-    assertTrue(customChecker.hasPermission(acl, subject, Permission.READ))
+    assertTrue(customChecker.hasPermission(subject, acl, Permission.READ))
   }
 
   @Test
-  fun `checker supports custom global roles`() = runBlocking {
+  fun `checker supports custom global roles`() {
     val customChecker = AclChecker(globalRoles = setOf("ROLE_SUPPORT"))
     val acl = Acl.of("appointment-1", "someone-else", AclRole.READER)
     val subject = AccessSubject("support-user", setOf("ROLE_SUPPORT"))
 
-    assertTrue(customChecker.hasPermission(acl, subject, Permission.MANAGE))
+    assertTrue(customChecker.hasPermission(subject, acl, Permission.MANAGE))
+  }
+
+  @Test
+  fun `duplicate role assignment uses the last declared role`() {
+    val acl = acl("appointment-1") {
+      reader("user-1")
+      writer("user-1")
+    }
+
+    assertEquals(AclRole.WRITER, acl.userRoleMap["user-1"])
   }
 }

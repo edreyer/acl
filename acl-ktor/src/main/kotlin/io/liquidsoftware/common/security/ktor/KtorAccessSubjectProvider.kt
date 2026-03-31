@@ -23,8 +23,8 @@ class KtorAccessSubjectProvider(
     return resolver.resolve(call).also { call.attributes.put(CurrentAccessSubjectKey, it) }
   }
 
-  suspend fun hasPermission(call: ApplicationCall, acl: Acl, permission: Permission): Boolean =
-    aclChecker.hasPermission(acl, currentSubject(call), permission)
+  fun hasPermission(call: ApplicationCall, acl: Acl, permission: Permission): Boolean =
+    aclChecker.hasPermission(currentSubject(call), acl, permission)
 
   /**
    * Evaluates a domain-facing [Authorizer] against the current call subject.

@@ -6,6 +6,19 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-01
+
+### Added
+
+- Added `DenialContext.Metadata` and optional denial-context builders to authorizer Arrow helpers so denials can carry structured metadata.
+- Spring Security Arrow authorizer helpers now forward optional denial-context metadata instead of discarding it.
+
+### Changed
+
+- Spring Security integration types are now plain Kotlin classes wired explicitly through constructors instead of component discovery.
+- Spring Security now separates subject resolution from authorization: `SpringSecurityAccessSubjectProvider` only resolves the current subject, while `SpringSecurityAclChecker` owns ACL and authorizer checks.
+- Core ACL permission checks are synchronous because they only inspect in-memory ACL data; the Spring and Ktor low-level ACL wrappers follow the same model, while the coroutine boundary stays on authorizer rule evaluation.
+
 ## [0.2.0] - 2026-03-30
 
 ### Added

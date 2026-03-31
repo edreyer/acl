@@ -2,13 +2,14 @@ package io.liquidsoftware.common.security.acl.arrow
 
 import arrow.core.Either
 import arrow.core.raise.either
-import io.liquidsoftware.common.security.acl.AccessSubject
+import io.liquidsoftware.common.security.acl.ANONYMOUS_SUBJECT_ID
 import io.liquidsoftware.common.security.acl.AccessDenied
+import io.liquidsoftware.common.security.acl.AccessSubject
 import io.liquidsoftware.common.security.acl.Acl
 import io.liquidsoftware.common.security.acl.AclChecker
 import io.liquidsoftware.common.security.acl.AclRole
-import io.liquidsoftware.common.security.acl.Authorizer
 import io.liquidsoftware.common.security.acl.AuthorizationError
+import io.liquidsoftware.common.security.acl.Authorizer
 import io.liquidsoftware.common.security.acl.DenialContext
 import io.liquidsoftware.common.security.acl.Permission
 import io.liquidsoftware.common.security.acl.SecuredResource
@@ -16,7 +17,6 @@ import io.liquidsoftware.common.security.acl.authorizer
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class AclArrowTest {
@@ -62,23 +62,23 @@ class AclArrowTest {
     }
 
   @Test
-  fun `ensureCanRead allows reader access`() = runBlocking {
+  fun `ensureCanRead allows reader access`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.READER)
     val subject = AccessSubject("user-1", emptySet())
 
-    val result = either<AuthorizationError, Unit> {
+    val result = either {
       aclChecker.ensureCanRead(subject, acl)
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
-  fun `ensureCanWrite raises AccessDenied with acl context for denied access`() = runBlocking {
+  fun `ensureCanWrite raises AccessDenied with acl context for denied access`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.READER)
     val subject = AccessSubject("user-1", emptySet())
 
-    val result = either<AuthorizationError, Unit> {
+    val result = either {
       aclChecker.ensureCanWrite(subject, acl)
     }
 
@@ -90,7 +90,19 @@ class AclArrowTest {
   }
 
   @Test
-  fun `ensureCanManage allows manager access`() = runBlocking {
+  fun `ensureCanWrite allows writer access`() {
+    val acl = Acl.of("appointment-1", "user-1", AclRole.WRITER)
+    val subject = AccessSubject("user-1", emptySet())
+
+    val result = either {
+      aclChecker.ensureCanWrite(subject, acl)
+    }
+
+    assertInstanceOf(Either.Right::class.java, result)
+  }
+
+  @Test
+  fun `ensureCanManage allows manager access`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.MANAGER)
     val subject = AccessSubject("user-1", emptySet())
 
@@ -98,25 +110,25 @@ class AclArrowTest {
       aclChecker.ensureCanManage(subject, acl)
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
-  fun `subject extension ensureCanRead allows reader access`() = runBlocking {
+  fun `subject extension ensureCanRead allows reader access`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.READER)
     val subject = AccessSubject("user-1", emptySet())
 
     val result = with(aclChecker) {
-      either<AuthorizationError, Unit> {
+      either {
         subject.ensureCanRead(acl)
       }
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
-  fun `subject extension ensureCanWrite raises AccessDenied with acl context for denied access`() = runBlocking {
+  fun `subject extension ensureCanWrite raises AccessDenied with acl context for denied access`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.READER)
     val subject = AccessSubject("user-1", emptySet())
 
@@ -134,7 +146,21 @@ class AclArrowTest {
   }
 
   @Test
-  fun `subject extension ensureCanManage allows manager access`() = runBlocking {
+  fun `subject extension ensureCanWrite allows writer access`() {
+    val acl = Acl.of("appointment-1", "user-1", AclRole.WRITER)
+    val subject = AccessSubject("user-1", emptySet())
+
+    val result = with(aclChecker) {
+      either {
+        subject.ensureCanWrite(acl)
+      }
+    }
+
+    assertInstanceOf(Either.Right::class.java, result)
+  }
+
+  @Test
+  fun `subject extension ensureCanManage allows manager access`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.MANAGER)
     val subject = AccessSubject("user-1", emptySet())
 
@@ -144,11 +170,11 @@ class AclArrowTest {
       }
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
-  fun `subject extension ensureCanRead supports secured resources`() = runBlocking {
+  fun `subject extension ensureCanRead supports secured resources`() {
     val subject = AccessSubject("user-1", emptySet())
     val resource = TestResource(Acl.of("appointment-1", "user-1", AclRole.READER))
 
@@ -158,11 +184,11 @@ class AclArrowTest {
       }
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
-  fun `subject extension ensureCanWrite raises AccessDenied with acl context for secured resources`() = runBlocking {
+  fun `subject extension ensureCanWrite raises AccessDenied with acl context for secured resources`() {
     val subject = AccessSubject("user-1", emptySet())
     val resource = TestResource(Acl.of("appointment-1", "user-1", AclRole.READER))
 
@@ -180,11 +206,11 @@ class AclArrowTest {
   }
 
   @Test
-  fun `ensurePermission raises requested permission in error`() = runBlocking {
+  fun `ensurePermission raises requested permission in error`() {
     val acl = Acl.of("appointment-1", "user-1", AclRole.READER)
     val subject = AccessSubject("user-1", emptySet())
 
-    val result = either<AuthorizationError, Unit> {
+    val result = either {
       aclChecker.ensurePermission(subject, acl, Permission.MANAGE)
     }
 
@@ -196,7 +222,7 @@ class AclArrowTest {
   }
 
   @Test
-  fun `subject extension ensureCanManage supports secured resources`() = runBlocking {
+  fun `subject extension ensureCanManage supports secured resources`() {
     val subject = AccessSubject("user-1", emptySet())
     val resource = TestResource(Acl.of("appointment-1", "user-1", AclRole.MANAGER))
 
@@ -206,16 +232,16 @@ class AclArrowTest {
       }
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
-  fun `subject extension ensureCanRead supports anonymous fallback on secured resources`() = runBlocking {
+  fun `subject extension ensureCanRead supports anonymous fallback on secured resources`() {
     val subject = AccessSubject("user-1", emptySet())
     val resource = TestResource(
       Acl(
         resourceId = "appointment-1",
-        userRoleMap = mapOf("u_anonymous" to AclRole.READER),
+        userRoleMap = mapOf(ANONYMOUS_SUBJECT_ID to AclRole.READER),
       ),
     )
 
@@ -225,7 +251,7 @@ class AclArrowTest {
       }
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
@@ -233,11 +259,12 @@ class AclArrowTest {
     val user = User(id = "reader-1", roles = setOf(Role.DOCUMENT_READER))
     val document = Document(id = "doc-1", ownerId = "owner-1")
 
-    val result = either<AuthorizationError, Unit> {
+    val result = either {
       documentAccess.ensureCanRead(user, document)
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
+    Unit
   }
 
   @Test
@@ -245,11 +272,12 @@ class AclArrowTest {
     val user = User(id = "editor-1", roles = setOf(Role.DOCUMENT_EDITOR))
     val document = Document(id = "doc-1", ownerId = "owner-1")
 
-    val result = either<AuthorizationError, Unit> {
+    val result = either {
       documentAccess.ensureHasAccess(user, document, Permission.WRITE)
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
+    Unit
   }
 
   @Test
@@ -263,6 +291,59 @@ class AclArrowTest {
 
     val error = assertInstanceOf(AccessDenied::class.java, (result as Either.Left).value)
     assertEquals(Permission.WRITE, error.permission)
+  }
+
+  @Test
+  fun `authorizer ensureCanWrite allows access`() = runBlocking {
+    val user = User(id = "editor-1", roles = setOf(Role.DOCUMENT_EDITOR))
+    val document = Document(id = "doc-1", ownerId = "owner-1")
+
+    val result = either {
+      documentAccess.ensureCanWrite(user, document)
+    }
+
+    assertInstanceOf(Either.Right::class.java, result)
+    Unit
+  }
+
+  @Test
+  fun `authorizer ensureCanManage allows access`() = runBlocking {
+    val user = User(id = "owner-1")
+    val document = Document(id = "doc-1", ownerId = "owner-1")
+
+    val result = either {
+      documentAccess.ensureCanManage(user, document)
+    }
+
+    assertInstanceOf(Either.Right::class.java, result)
+    Unit
+  }
+
+  @Test
+  fun `authorizer ensureCanRead can attach structured denial metadata`() = runBlocking {
+    val user = User(id = "user-1")
+    val document = Document(id = "doc-1", ownerId = "owner-1")
+
+    val result = either {
+      documentAccess.ensureCanRead(
+        user,
+        document,
+      ) { subject, resource, permission ->
+        DenialContext.Metadata(
+          values = mapOf(
+            "subjectId" to subject.id,
+            "documentId" to resource.id,
+            "permission" to permission.name,
+          ),
+        )
+      }
+    }
+
+    val error = assertInstanceOf(AccessDenied::class.java, (result as Either.Left).value)
+    val context = assertInstanceOf(DenialContext.Metadata::class.java, error.context)
+    assertEquals("user-1", context.values["subjectId"])
+    assertEquals("doc-1", context.values["documentId"])
+    assertEquals("READ", context.values["permission"])
   }
 
   @Test
@@ -304,7 +385,8 @@ class AclArrowTest {
       }
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
+    Unit
   }
 
   @Test
@@ -318,7 +400,8 @@ class AclArrowTest {
       }
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
+    Unit
   }
 
   @Test
@@ -332,7 +415,8 @@ class AclArrowTest {
       }
     }
 
-    assertTrue(result is Either.Right)
+    assertInstanceOf(Either.Right::class.java, result)
+    Unit
   }
 
   @Test
@@ -368,6 +452,7 @@ class AclArrowTest {
     val lowLevelError = assertInstanceOf(AccessDenied::class.java, (lowLevelResult as Either.Left).value)
     val authorizerError = assertInstanceOf(AccessDenied::class.java, (authorizerResult as Either.Left).value)
     assertInstanceOf(DenialContext.Acl::class.java, lowLevelError.context)
-    assertTrue(authorizerError.context is DenialContext.Unknown)
+    assertInstanceOf(DenialContext.Unknown::class.java, authorizerError.context)
+    Unit
   }
 }

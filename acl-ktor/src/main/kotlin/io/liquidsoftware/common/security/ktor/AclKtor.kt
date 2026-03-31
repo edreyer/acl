@@ -47,7 +47,7 @@ fun Application.aclAccessSubjectProvider(): KtorAccessSubjectProvider =
 fun ApplicationCall.currentSubject(): AccessSubject =
   application.aclAccessSubjectProvider().currentSubject(this)
 
-suspend fun ApplicationCall.hasPermission(acl: Acl, permission: Permission): Boolean =
+fun ApplicationCall.hasPermission(acl: Acl, permission: Permission): Boolean =
   application.aclAccessSubjectProvider().hasPermission(this, acl, permission)
 
 /**
@@ -62,13 +62,13 @@ suspend fun <R> ApplicationCall.hasAccess(
   authorizer: Authorizer<AccessSubject, R>,
 ): Boolean = application.aclAccessSubjectProvider().hasAccess(this, resource, permission, authorizer)
 
-suspend fun ApplicationCall.hasPermission(resource: SecuredResource, permission: Permission): Boolean =
+fun ApplicationCall.hasPermission(resource: SecuredResource, permission: Permission): Boolean =
   hasPermission(resource.acl(), permission)
 
-suspend fun ApplicationCall.canRead(acl: Acl): Boolean =
+fun ApplicationCall.canRead(acl: Acl): Boolean =
   hasPermission(acl, Permission.READ)
 
-suspend fun ApplicationCall.canRead(resource: SecuredResource): Boolean =
+fun ApplicationCall.canRead(resource: SecuredResource): Boolean =
   hasPermission(resource, Permission.READ)
 
 /**
@@ -77,10 +77,10 @@ suspend fun ApplicationCall.canRead(resource: SecuredResource): Boolean =
 suspend fun <R> ApplicationCall.canRead(resource: R, authorizer: Authorizer<AccessSubject, R>): Boolean =
   hasAccess(resource, Permission.READ, authorizer)
 
-suspend fun ApplicationCall.canWrite(acl: Acl): Boolean =
+fun ApplicationCall.canWrite(acl: Acl): Boolean =
   hasPermission(acl, Permission.WRITE)
 
-suspend fun ApplicationCall.canWrite(resource: SecuredResource): Boolean =
+fun ApplicationCall.canWrite(resource: SecuredResource): Boolean =
   hasPermission(resource, Permission.WRITE)
 
 /**
@@ -89,10 +89,10 @@ suspend fun ApplicationCall.canWrite(resource: SecuredResource): Boolean =
 suspend fun <R> ApplicationCall.canWrite(resource: R, authorizer: Authorizer<AccessSubject, R>): Boolean =
   hasAccess(resource, Permission.WRITE, authorizer)
 
-suspend fun ApplicationCall.canManage(acl: Acl): Boolean =
+fun ApplicationCall.canManage(acl: Acl): Boolean =
   hasPermission(acl, Permission.MANAGE)
 
-suspend fun ApplicationCall.canManage(resource: SecuredResource): Boolean =
+fun ApplicationCall.canManage(resource: SecuredResource): Boolean =
   hasPermission(resource, Permission.MANAGE)
 
 /**

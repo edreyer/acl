@@ -22,14 +22,22 @@ sealed interface DenialContext {
     val resourceId: String,
     val subjectId: String,
   ) : DenialContext
+
+  /**
+   * Arbitrary structured metadata for application-defined denial details.
+   */
+  data class Metadata(
+    val values: Map<String, Any?>,
+  ) : DenialContext
 }
 
 /**
- * The single denial type raised by this library.
+ * Denial type for permission-based authorization checks.
  *
- * Authorizer-based checks usually return [DenialContext.Unknown].
- * Low-level ACL checks can attach [DenialContext.Acl] with the concrete resource
- * and subject identifiers that participated in the failed evaluation.
+ * Authorizer-based checks may attach [DenialContext.Metadata] when the caller
+ * wants to carry richer structured context. Low-level ACL checks can attach
+ * [DenialContext.Acl] with the concrete resource and subject identifiers that
+ * participated in the failed evaluation.
  */
 data class AccessDenied(
   override val permission: Permission,
@@ -57,6 +65,11 @@ data class Acl(
   }
 }
 
+/**
+ * Builder for [Acl] definitions.
+ *
+ * Later assignments for the same user replace earlier ones.
+ */
 class AclBuilder internal constructor(
   private val resourceId: String,
 ) {
@@ -95,6 +108,12 @@ class AclBuilder internal constructor(
 fun acl(resourceId: String, init: AclBuilder.() -> Unit): Acl =
   AclBuilder(resourceId).apply(init).build()
 
+/**
+ * Pure in-memory ACL evaluator.
+ *
+ * Permission checks are simple map and role lookups, so this API stays
+ * synchronous instead of forcing callers into coroutine scope.
+ */
 class AclChecker(
   private val anonymousSubjectId: String = ANONYMOUS_SUBJECT_ID,
   private val globalRoles: Set<String> = setOf(ROLE_ADMIN, ROLE_SYSTEM),
@@ -111,7 +130,7 @@ class AclChecker(
     const val ROLE_ADMIN = "ROLE_ADMIN"
   }
 
-  suspend fun hasPermission(acl: Acl, subject: AccessSubject, permission: Permission): Boolean {
+  fun hasPermission(subject: AccessSubject, acl: Acl, permission: Permission): Boolean {
     return if (subject.hasGlobalAccess()) {
       true
     } else {

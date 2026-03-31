@@ -8,7 +8,7 @@ Its main goal is simple application code:
 val canRead = documentAccess.canRead(user, document)
 ```
 
-Instead of pushing every caller down to low-level ACL primitives, the library now supports a domain-facing `Authorizer<S, R>` API in `acl-core`. If you prefer Arrow, the same policy can be enforced with typed failures instead of exceptions.
+Instead of pushing every caller down to low-level ACL primitives, the library now supports a domain-facing `Authorizer<S, R>` API in `acl-core`. If you prefer Arrow, the same policy can be enforced with typed failures instead of exceptions, and denials can carry structured metadata.
 
 ## Installation
 
@@ -16,7 +16,7 @@ Instead of pushing every caller down to low-level ACL primitives, the library no
 <dependency>
     <groupId>io.liquidsoftware</groupId>
     <artifactId>acl-core</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
 </dependency>
 ```
 
@@ -111,14 +111,15 @@ suspend fun updateDocument(
   }
 ```
 
-Denials are represented as a single type:
+Permission denials are represented with:
 
 ```kotlin
 AccessDenied(permission, context)
 ```
 
-`Authorizer`-based checks usually return `AccessDenied(permission)` with `DenialContext.Unknown`.
+`Authorizer`-based checks can attach `DenialContext.Metadata(...)` when you want richer denial details.
 Low-level `AclChecker`-based checks return `AccessDenied(permission, DenialContext.Acl(resourceId, subjectId))`.
+If you need app-specific translation, inspect `AccessDenied.context` and map it in your application layer.
 
 Equivalent explicit form:
 
@@ -202,8 +203,7 @@ Use this if you want:
 
 - `SpringSecurityAccessSubjectProvider`
 - `currentSubject()`
-- current-subject authorizer checks like `canRead(resource, authorizer)`
-- low-level `hasPermission(...)` checks against explicit ACL data
+- explicit wiring via `SpringSecurityAccessSubjectProvider(...)`
 
 ### `acl-spring-security-arrow`
 
@@ -212,8 +212,11 @@ Bridge module for Spring Security plus Arrow.
 Use this if you want:
 
 - `SpringSecurityAclChecker`
+- current-user ACL checks like `ensureCanRead(acl)`
 - current-user authorizer enforcement like `ensureCanRead(resource, authorizer)`
 - current-user `Raise<AuthorizationError>` checks against explicit ACL data
+- optional `denialContext` callbacks for structured denial metadata
+- explicit wiring via `SpringSecurityAclChecker(...)`
 
 ### `acl-ktor`
 
@@ -233,19 +236,17 @@ Use this if you want:
 
 ### Spring Security
 
-`acl-spring-security` can evaluate either:
+`acl-spring-security` resolves the current subject and leaves authorization checks to the Spring checker.
 
-- authorizer-first policies against the current subject
-- lower-level ACL checks when your application works with explicit ACL objects
+The integration types are plain Kotlin classes, so you can wire them explicitly in your own configuration.
 
 ```kotlin
 @Component
 class AppointmentAccessService(
   private val accessSubjects: SpringSecurityAccessSubjectProvider,
-  private val appointmentAccess: Authorizer<AccessSubject, Appointment>,
 ) {
-  suspend fun canCurrentUserRead(appointment: Appointment): Boolean =
-    accessSubjects.canRead(appointment, appointmentAccess)
+  fun currentSubject(): AccessSubject =
+    accessSubjects.currentSubject()
 }
 ```
 
@@ -290,6 +291,8 @@ authenticate {
 
 If your application already stores or constructs explicit ACL data, the lower-level engine is still available.
 
+These permission checks are synchronous because they operate on in-memory ACL data.
+
 ```kotlin
 import io.liquidsoftware.common.security.acl.AccessSubject
 import io.liquidsoftware.common.security.acl.AclChecker
@@ -310,8 +313,8 @@ val documentAcl = acl("document-42") {
 val checker = AclChecker()
 
 val allowed = checker.hasPermission(
-  acl = documentAcl,
   subject = subject,
+  acl = documentAcl,
   permission = Permission.READ,
 )
 ```

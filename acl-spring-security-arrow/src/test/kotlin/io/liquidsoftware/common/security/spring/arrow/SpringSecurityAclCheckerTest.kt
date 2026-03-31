@@ -2,9 +2,6 @@ package io.liquidsoftware.common.security.spring.arrow
 
 import arrow.core.Either
 import arrow.core.raise.either
-import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isInstanceOf
 import io.liquidsoftware.common.security.acl.ANONYMOUS_SUBJECT_ID
 import io.liquidsoftware.common.security.acl.AccessDenied
 import io.liquidsoftware.common.security.acl.AccessSubject
@@ -19,6 +16,8 @@ import io.liquidsoftware.common.security.acl.authorizer
 import io.liquidsoftware.common.security.spring.SpringSecurityAccessSubjectProvider
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
@@ -36,16 +35,16 @@ class SpringSecurityAclCheckerTest {
     SpringSecurityAccessSubjectProvider { authentication ->
       when (authentication) {
         is UsernamePasswordAuthenticationToken -> AccessSubject(
-          userId = authentication.credentials as? String ?: "u_anonymous",
+          userId = authentication.credentials as? String ?: ANONYMOUS_SUBJECT_ID,
           roles = authentication.authorities.mapNotNull { it.authority }.toSet(),
         )
-
         else -> AccessSubject(
-          userId = "u_anonymous",
+          userId = ANONYMOUS_SUBJECT_ID,
           roles = emptySet(),
         )
       }
     },
+    AclChecker(),
   )
 
   private val documentAccess: Authorizer<AccessSubject, Document> =
@@ -69,7 +68,7 @@ class SpringSecurityAclCheckerTest {
   }
 
   @Test
-  fun `ensureCanRead uses current subject and succeeds for allowed access`() = runBlocking {
+  fun `ensureCanRead uses current subject and succeeds for allowed access`() {
     authenticate("u_test-user", "ROLE_USER")
     val acl = Acl.of("a_test", "u_test-user", AclRole.READER)
 
@@ -77,11 +76,11 @@ class SpringSecurityAclCheckerTest {
       checker.ensureCanRead(acl)
     }
 
-    assertThat(result is Either.Right).isEqualTo(true)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
-  fun `ensureCanWrite uses current subject and raises AccessDenied with acl context for denied access`() = runBlocking {
+  fun `ensureCanWrite uses current subject and raises AccessDenied with acl context for denied access`() {
     authenticate("u_test-user", "ROLE_USER")
     val acl = Acl.of("a_test", "u_test-user", AclRole.READER)
 
@@ -89,19 +88,27 @@ class SpringSecurityAclCheckerTest {
       checker.ensureCanWrite(acl)
     }
 
-    val error = (result as Either.Left).value
-    assertThat(error).isInstanceOf(AccessDenied::class)
-    error as AccessDenied
-    val context = error.context
-    assertThat(context).isInstanceOf(DenialContext.Acl::class)
-    context as DenialContext.Acl
-    assertThat(context.resourceId).isEqualTo("a_test")
-    assertThat(error.permission).isEqualTo(Permission.WRITE)
-    assertThat(context.subjectId).isEqualTo("u_test-user")
+    val error = assertInstanceOf(AccessDenied::class.java, (result as Either.Left).value)
+    val context = assertInstanceOf(DenialContext.Acl::class.java, error.context)
+    assertEquals("a_test", context.resourceId)
+    assertEquals(Permission.WRITE, error.permission)
+    assertEquals("u_test-user", context.subjectId)
   }
 
   @Test
-  fun `ensureCanManage uses admin bypass and succeeds`() = runBlocking {
+  fun `ensureCanWrite uses writer access and succeeds`() {
+    authenticate("u_writer", "ROLE_EDITOR")
+    val acl = Acl.of("a_test", "u_writer", AclRole.WRITER)
+
+    val result = either<AuthorizationError, Unit> {
+      checker.ensureCanWrite(acl)
+    }
+
+    assertInstanceOf(Either.Right::class.java, result)
+  }
+
+  @Test
+  fun `ensureCanManage uses admin bypass and succeeds`() {
     authenticate("u_admin", AclChecker.ROLE_ADMIN)
     val acl = Acl.of("a_test", "someone-else", AclRole.READER)
 
@@ -109,38 +116,91 @@ class SpringSecurityAclCheckerTest {
       checker.ensureCanManage(acl)
     }
 
-    assertThat(result is Either.Right).isEqualTo(true)
+    assertInstanceOf(Either.Right::class.java, result)
   }
 
   @Test
-  fun `ensureCanRead raises AccessDenied with acl context for anonymous subject without access`() = runBlocking {
+  fun `ensureCanRead raises AccessDenied with acl context for anonymous subject without access`() {
     val acl = Acl.of("a_test", "someone-else", AclRole.READER)
 
     val result = either {
       checker.ensureCanRead(acl)
     }
 
-    val error = (result as Either.Left).value
-    assertThat(error).isInstanceOf(AccessDenied::class)
-    error as AccessDenied
-    val context = error.context
-    assertThat(context).isInstanceOf(DenialContext.Acl::class)
-    context as DenialContext.Acl
-    assertThat(context.resourceId).isEqualTo("a_test")
-    assertThat(error.permission).isEqualTo(Permission.READ)
-    assertThat(context.subjectId).isEqualTo(ANONYMOUS_SUBJECT_ID)
+    val error = assertInstanceOf(AccessDenied::class.java, (result as Either.Left).value)
+    val context = assertInstanceOf(DenialContext.Acl::class.java, error.context)
+    assertEquals("a_test", context.resourceId)
+    assertEquals(Permission.READ, error.permission)
+    assertEquals(ANONYMOUS_SUBJECT_ID, context.subjectId)
   }
 
   @Test
-  fun `ensureCanRead supports authorizers with current subject`() = runBlocking {
-    authenticate("u_reader", "ROLE_READER")
+  fun `ensureCanRead supports authorizers with current subject`() {
+    runBlocking {
+      authenticate("u_reader", "ROLE_READER")
+      val document = Document(id = "doc-1", ownerId = "u_owner")
+
+      val result = either {
+        checker.ensureCanRead(document, documentAccess)
+      }
+
+      assertInstanceOf(Either.Right::class.java, result)
+    }
+  }
+
+  @Test
+  fun `ensureCanWrite supports authorizers with current subject`() {
+    runBlocking {
+      authenticate("u_editor", "ROLE_EDITOR")
+      val document = Document(id = "doc-1", ownerId = "u_owner")
+
+      val result = either {
+        checker.ensureCanWrite(document, documentAccess)
+      }
+
+      assertInstanceOf(Either.Right::class.java, result)
+    }
+  }
+
+  @Test
+  fun `ensureCanManage supports authorizers with current subject`() {
+    runBlocking {
+      authenticate("u_owner", "ROLE_USER")
+      val document = Document(id = "doc-1", ownerId = "u_owner")
+
+      val result = either {
+        checker.ensureCanManage(document, documentAccess)
+      }
+
+      assertInstanceOf(Either.Right::class.java, result)
+    }
+  }
+
+  @Test
+  fun `ensureCanRead forwards structured denial metadata for authorizers`() = runBlocking {
+    authenticate("u_denied", "ROLE_USER")
     val document = Document(id = "doc-1", ownerId = "u_owner")
 
-    val result = either {
-      checker.ensureCanRead(document, documentAccess)
+    val result = either<AuthorizationError, Unit> {
+      checker.ensureCanRead(
+        document,
+        documentAccess,
+      ) { subject, resource, permission ->
+        DenialContext.Metadata(
+          values = mapOf(
+            "subjectId" to subject.userId,
+            "resourceId" to resource.id,
+            "permission" to permission.name,
+          ),
+        )
+      }
     }
 
-    assertThat(result is Either.Right).isEqualTo(true)
+    val error = assertInstanceOf(AccessDenied::class.java, (result as Either.Left).value)
+    val context = assertInstanceOf(DenialContext.Metadata::class.java, error.context)
+    assertEquals("u_denied", context.values["subjectId"])
+    assertEquals("doc-1", context.values["resourceId"])
+    assertEquals("READ", context.values["permission"])
   }
 
   @Test
@@ -152,11 +212,9 @@ class SpringSecurityAclCheckerTest {
       checker.ensureHasAccess(document, Permission.WRITE, documentAccess)
     }
 
-    val error = (result as Either.Left).value
-    assertThat(error).isInstanceOf(AccessDenied::class)
-    error as AccessDenied
-    assertThat(error.permission).isEqualTo(Permission.WRITE)
-    assertThat(error.context).isEqualTo(DenialContext.Unknown)
+    val error = assertInstanceOf(AccessDenied::class.java, (result as Either.Left).value)
+    assertEquals(Permission.WRITE, error.permission)
+    assertEquals(DenialContext.Unknown, error.context)
   }
 
   private fun authenticate(userId: String, vararg roles: String) {
