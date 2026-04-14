@@ -1,337 +1,153 @@
 # ACL
 
-`acl` is a small Kotlin-first authorization library.
+`acl` is a small Kotlin ACL library for answering one question well:
 
-Its main goal is simple application code:
+Can subject `A` access resource `B`?
 
-```kotlin
-val canRead = documentAccess.canRead(user, document)
-```
+The library is intentionally small:
 
-Instead of pushing every caller down to low-level ACL primitives, the library now supports a domain-facing `Authorizer<S, R>` API in `acl-core`. If you prefer Arrow, the same policy can be enforced with typed failures instead of exceptions.
+- pure ACL core
+- allow-only rules
+- `Manage` implies `Read` and `Write`
+- exact-match resource routing
+- collection helpers for batch checks and filtering
 
 ## Installation
 
-```xml
-<dependency>
-    <groupId>io.liquidsoftware</groupId>
-    <artifactId>acl-core</artifactId>
-    <version>0.2.0</version>
-</dependency>
+```kotlin
+dependencies {
+    implementation("io.liquidsoftware:acl:0.3.0-SNAPSHOT")
+}
 ```
+
+## Local Use
+
+To use this snapshot in another Gradle project, you can either:
+
+1. Publish it to your local Maven cache:
+```bash
+./gradlew publishToMavenLocal
+```
+
+Then add `mavenLocal()` to the consuming project repositories and depend on:
+```kotlin
+implementation("io.liquidsoftware:acl:0.3.0-SNAPSHOT")
+```
+
+If you want to refresh the cached snapshot after a new local publish, run the consuming build with:
+```bash
+./gradlew --refresh-dependencies <task>
+```
+
+2. Use a composite build without publishing:
+```kotlin
+includeBuild("/Users/erikdreyer/dev/erik/acl/acl")
+```
+
+Then keep the same dependency declaration:
+```kotlin
+implementation("io.liquidsoftware:acl:0.3.0-SNAPSHOT")
+```
+
+## Maven Central
+
+This project is wired for Central Portal publishing through the `com.vanniktech.maven.publish` plugin.
+
+For a release publish you will need:
+
+- a Central Portal account
+- a registered `io.liquidsoftware` namespace
+- a GPG key for signing artifacts
+- Central Portal credentials and signing keys in Gradle properties or environment variables
+
+Typical Gradle properties:
+
+```properties
+mavenCentralUsername=...
+mavenCentralPassword=...
+signingInMemoryKey=...
+signingInMemoryKeyPassword=...
+mavenCentralPublishing=true
+signAllPublications=true
+```
+
+To publish the current snapshot to Central Portal:
+
+```bash
+./gradlew publishToMavenCentral
+```
+
+To publish a release, first change the version in [build.gradle.kts](build.gradle.kts) to a non-SNAPSHOT release version, set `mavenCentralPublishing=true` and `signAllPublications=true`, then run the same task.
 
 ## Quick Start
 
-Start by defining an authorizer for your domain types.
-
 ```kotlin
-import io.liquidsoftware.common.security.acl.authorizer
+import io.liquidsoftware.acl.Operation
+import io.liquidsoftware.acl.catalog.aclCatalog
+import io.liquidsoftware.acl.policy.aclPolicy
 
-/**
- * Application roles that influence document access.
- */
-enum class Role {
-  ADMIN,
-  DOCUMENT_READER,
-  DOCUMENT_EDITOR,
+data class User(val id: String, val isSystemAdmin: Boolean)
+data class Book(val userId: String)
+
+val bookPolicy = aclPolicy<User, Book> {
+    allow(Operation.Manage) { user -> user.isSystemAdmin }
+    allow(Operation.Read) { user, book -> user.id == book.userId }
+    allow(Operation.Write) { user, book -> user.id == book.userId }
 }
 
-/**
- * The actor attempting to access a document.
- */
-data class User(
-  val id: String,
-  val roles: Set<Role>,
-)
-
-/**
- * A document resource. The owner can fully manage it.
- */
-data class Document(
-  val id: String,
-  val ownerId: String,
-)
-
-/**
- * Document authorization policy.
- *
- * - `canManage`: owners and admins can do anything
- * - `canWrite`: managers and editors can modify documents
- * - `canRead`: writers and readers can view documents
- */
-val documentAccess = authorizer<User, Document> {
-  canManage { user, document ->
-    user.id == document.ownerId || Role.ADMIN in user.roles
-  }
-
-  canWrite { user, document ->
-    canManage(user, document) || Role.DOCUMENT_EDITOR in user.roles
-  }
-
-  canRead { user, document ->
-    canWrite(user, document) || Role.DOCUMENT_READER in user.roles
-  }
-}
-```
-
-Use it directly from application code:
-
-```kotlin
-val canRead = documentAccess.canRead(user, document)
-val canWrite = documentAccess.canWrite(user, document)
-val canManage = documentAccess.canManage(user, document)
-```
-
-This keeps the policy close to the domain model:
-
-- `canManage` expresses the strongest rule
-- `canWrite` can build on `canManage`
-- `canRead` can build on `canWrite`
-
-If a permission rule is not defined, access is denied by default.
-
-## Arrow
-
-Add `acl-arrow` if you want typed enforcement with Arrow `Raise`.
-
-```kotlin
-import arrow.core.Either
-import arrow.core.raise.either
-import io.liquidsoftware.common.security.acl.AuthorizationError
-import io.liquidsoftware.common.security.acl.arrow.ensureCanWrite
-
-suspend fun updateDocument(
-  user: User,
-  document: Document,
-): Either<AuthorizationError, Unit> =
-  with(documentAccess) {
-    either {
-      user.ensureCanWrite(document)
-    }
-  }
-```
-
-Denials are represented as a single type:
-
-```kotlin
-AccessDenied(permission, context)
-```
-
-`Authorizer`-based checks usually return `AccessDenied(permission)` with `DenialContext.Unknown`.
-Low-level `AclChecker`-based checks return `AccessDenied(permission, DenialContext.Acl(resourceId, subjectId))`.
-
-Equivalent explicit form:
-
-```kotlin
-either<AuthorizationError, Unit> {
-  documentAccess.ensureCanWrite(user, document)
-}
-```
-
-## Optional App-Layer Sugar
-
-If you want `user.canRead(document)`, keep that as a tiny application-layer extension:
-
-```kotlin
-import io.liquidsoftware.common.security.acl.Authorizer
-
-context(access: Authorizer<User, Document>)
-suspend fun User.canRead(document: Document): Boolean =
-  access.canRead(this, document)
-
-context(access: Authorizer<User, Document>)
-suspend fun User.canWrite(document: Document): Boolean =
-  access.canWrite(this, document)
-
-context(access: Authorizer<User, Document>)
-suspend fun User.canManage(document: Document): Boolean =
-  access.canManage(this, document)
-```
-
-Usage:
-
-```kotlin
-with(documentAccess) {
-  val canRead = user.canRead(document)
-}
-```
-
-This keeps your domain types free of framework or library interfaces while still reading naturally.
-
-## Modules
-
-### `acl-core`
-
-Pure Kotlin authorization core.
-
-Use this if you want:
-
-- `Authorizer<S, R>`
-- `authorizer { ... }`
-- `canRead`, `canWrite`, `canManage`, and `hasAccess`
-- low-level ACL primitives when you need them
-
-Key types:
-
-- `Authorizer<S, R>`
-- `RuleScope<S, R>`
-- `AccessDenied`
-- `AuthorizationError`
-- `DenialContext`
-- `Acl`
-- `AclChecker`
-- `AccessSubject`
-
-### `acl-arrow`
-
-Arrow integration for both API layers.
-
-Use this if you want:
-
-- `Authorizer.ensureCanRead(...)`
-- `Authorizer.ensureCanWrite(...)`
-- `Authorizer.ensureCanManage(...)`
-- `Authorizer.ensureHasAccess(...)`
-- low-level `AclChecker.ensureCanRead(...)` and related helpers
-
-### `acl-spring-security`
-
-Spring Security integration for resolving the current subject as an `AccessSubject`.
-
-Use this if you want:
-
-- `SpringSecurityAccessSubjectProvider`
-- `currentSubject()`
-- current-subject authorizer checks like `canRead(resource, authorizer)`
-- low-level `hasPermission(...)` checks against explicit ACL data
-
-### `acl-spring-security-arrow`
-
-Bridge module for Spring Security plus Arrow.
-
-Use this if you want:
-
-- `SpringSecurityAclChecker`
-- current-user authorizer enforcement like `ensureCanRead(resource, authorizer)`
-- current-user `Raise<AuthorizationError>` checks against explicit ACL data
-
-### `acl-ktor`
-
-Ktor integration for resolving the current subject on `ApplicationCall`.
-
-Use this if you want:
-
-- `AclKtor`
-- `ApplicationCall.currentSubject()`
-- current-call authorizer checks like `call.canRead(resource, authorizer)`
-- `ApplicationCall.hasPermission(...)`
-- `ApplicationCall.canRead(...)`
-- `ApplicationCall.canWrite(...)`
-- `ApplicationCall.canManage(...)`
-
-## Framework Examples
-
-### Spring Security
-
-`acl-spring-security` can evaluate either:
-
-- authorizer-first policies against the current subject
-- lower-level ACL checks when your application works with explicit ACL objects
-
-```kotlin
-@Component
-class AppointmentAccessService(
-  private val accessSubjects: SpringSecurityAccessSubjectProvider,
-  private val appointmentAccess: Authorizer<AccessSubject, Appointment>,
-) {
-  suspend fun canCurrentUserRead(appointment: Appointment): Boolean =
-    accessSubjects.canRead(appointment, appointmentAccess)
-}
-```
-
-### Spring Security With Arrow
-
-```kotlin
-import arrow.core.raise.Raise
-import io.liquidsoftware.common.security.acl.AuthorizationError
-
-@Component
-class AppointmentPersistenceAdapter(
-  private val acl: SpringSecurityAclChecker,
-  private val appointmentAccess: Authorizer<AccessSubject, Appointment>,
-) {
-  context(_: Raise<AuthorizationError>)
-  suspend fun ensureReadable(appointment: Appointment) {
-    acl.ensureCanRead(appointment, appointmentAccess)
-  }
-}
-```
-
-### Ktor
-
-`acl-ktor` can also evaluate authorizers against the current call subject.
-
-```kotlin
-authenticate {
-  get("/documents/{id}") {
-    val document = loadDocument(call.parameters["id"]!!)
-
-    if (!call.canRead(document, documentAccess)) {
-      call.respond(HttpStatusCode.Forbidden)
-      return@get
-    }
-
-    call.respond(document)
-  }
-}
-```
-
-## Advanced: Explicit ACL Data
-
-If your application already stores or constructs explicit ACL data, the lower-level engine is still available.
-
-```kotlin
-import io.liquidsoftware.common.security.acl.AccessSubject
-import io.liquidsoftware.common.security.acl.AclChecker
-import io.liquidsoftware.common.security.acl.Permission
-import io.liquidsoftware.common.security.acl.acl
-
-val subject = AccessSubject(
-  userId = "u_123",
-  roles = setOf("ROLE_USER"),
-)
-
-val documentAcl = acl("document-42") {
-  manager("u_owner")
-  writer("u_editor")
-  reader("u_auditor")
+val catalog = aclCatalog {
+    register(bookPolicy)
 }
 
-val checker = AclChecker()
+val bob = User(id = "bob", isSystemAdmin = false)
+val admin = User(id = "root", isSystemAdmin = true)
+val book = Book(userId = "bob")
 
-val allowed = checker.hasPermission(
-  acl = documentAcl,
-  subject = subject,
-  permission = Permission.READ,
-)
+catalog.canRead(bob, book)
+catalog.canWrite(bob, book)
+catalog.canManage(admin, book)
+
+val decision = catalog.decide(bob, Operation.Read, Book(userId = "alice"))
+decision.granted
+decision.reason.message
 ```
 
-Low-level denials use the same `AccessDenied` type, but with ACL-specific context:
+## Collection Helpers
 
 ```kotlin
-AccessDenied(
-  permission = Permission.READ,
-  context = DenialContext.Acl(
-    resourceId = "document-42",
-    subjectId = "u_123",
-  ),
-)
+catalog.canReadAll(bob, books)
+catalog.canWriteAll(bob, books)
+catalog.canManageAll(bob, books)
+catalog.filterReadableBy(bob, books)
+catalog.filterWritableBy(bob, books)
+catalog.filterManageableBy(bob, books)
+catalog.partitionReadableBy(bob, books)
+catalog.partitionWritableBy(bob, books)
+catalog.partitionManageableBy(bob, books)
+catalog.decideAll(bob, Operation.Read, books)
 ```
 
-## Design Notes
+## Contract
 
-- `acl-core` stays framework-neutral
-- Arrow is optional
-- Spring Security is optional
-- current-user lookup belongs in integration modules, not in the core
-- authorization denial is treated as data, not as an exception by default
+The stable behavior is covered by tests and includes:
+
+- exact-match resource routing
+- duplicate registration rejection
+- fail-fast validation for wrong subject type
+- `Manage` implies `Read` and `Write`
+- `Read` and `Write` do not imply each other
+- empty collections are granted by `can*All(...)`
+- empty policies deny all access
+- empty catalogs deny unknown resources
+- denied decisions carry a structured reason with a human-readable message
+
+## Project Shape
+
+This repository currently uses a single Gradle module for the core ACL engine.
+The earlier Maven submodules and framework-specific adapters were removed during the reset.
+
+If we bring Spring Boot back later, the cleanest path is likely to reintroduce it as a separate Gradle module so the core stays framework-neutral.
+
+## Limitations
+
+Current caveats and future improvement ideas are tracked in [docs/limitations-and-future-work.md](docs/limitations-and-future-work.md).

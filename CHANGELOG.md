@@ -6,6 +6,24 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+### Added
+
+- Added a new single-module Gradle build as part of the project reset.
+- Added the `io.liquidsoftware.acl` package namespace for the reset ACL core.
+
+### Changed
+
+- Reset the project from the previous framework-heavy Maven multi-module layout to a single Gradle ACL core.
+- Replaced the previous `io.liquidsoftware.common.security.*` implementation with the `acl2` core model under `io.liquidsoftware.acl.*`.
+- Updated the README and project docs to match the new core-first library shape.
+
+### Breaking Changes
+
+- This is a full project reset, not a compatible evolution of the previous codebase.
+- Removed the old Maven `acl-*` modules and root `pom.xml`.
+- Renamed the public package namespace from `io.liquidsoftware.common.security.*` to `io.liquidsoftware.acl.*`.
+- Removed the Ktor and Spring Security adapter modules during the reset.
+
 ## [0.2.0] - 2026-03-30
 
 ### Added

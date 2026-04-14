@@ -1,0 +1,7 @@
+complexity:
+  TooManyFunctions:
+    allowedFunctionsPerClass: 20
+
+style:
+  MaxLineLength:
+    maxLineLength: 140
