@@ -51,7 +51,7 @@ implementation("io.liquidsoftware:acl:0.3.0-SNAPSHOT")
 
 ## Maven Central
 
-This project is wired for Central Portal publishing through the `com.vanniktech.maven.publish` plugin.
+This project is wired for Central Portal publishing through the same Gradle + `com.gradleup.nmcp` setup used in the `workflow` project.
 
 For a release publish you will need:
 
@@ -63,21 +63,24 @@ For a release publish you will need:
 Typical Gradle properties:
 
 ```properties
-mavenCentralUsername=...
-mavenCentralPassword=...
+centralPortalUsername=...
+centralPortalPassword=...
 signingInMemoryKey=...
 signingInMemoryKeyPassword=...
-mavenCentralPublishing=true
-signAllPublications=true
 ```
 
-To publish the current snapshot to Central Portal:
+To publish a release to Sonatype / Maven Central:
 
 ```bash
-./gradlew publishToMavenCentral
+./gradlew publishAllPublicationsToCentralPortal
 ```
 
-To publish a release, first change the version in [build.gradle.kts](build.gradle.kts) to a non-SNAPSHOT release version, set `mavenCentralPublishing=true` and `signAllPublications=true`, then run the same task.
+Before publishing, make sure:
+
+- `version = "x.y.z"` in [build.gradle.kts](build.gradle.kts)
+- `CHANGELOG.md` includes the release notes
+- `centralPortalUsername` and `centralPortalPassword` are configured in `~/.gradle/gradle.properties`
+- your signing key is configured via `signingInMemoryKey` and `signingInMemoryKeyPassword`, or the equivalent GPG file-based properties
 
 ## Quick Start
 

@@ -1,6 +1,6 @@
 # Releasing
 
-This project is configured to publish its Maven artifacts to Maven Central through the Central Publisher Portal.
+This project is configured to publish its Maven artifacts to Maven Central through Sonatype's Central Publisher Portal using Gradle and the `com.gradleup.nmcp` plugin.
 
 ## Prerequisites
 
@@ -17,25 +17,18 @@ Central docs:
 - `https://central.sonatype.org/publish/generate-portal-token/`
 - `https://central.sonatype.org/publish/requirements/`
 - `https://central.sonatype.org/publish/requirements/gpg/`
-- `https://central.sonatype.org/publish/publish-portal-maven/`
+- `https://central.sonatype.org/publish/publish-portal-gradle/`
 
 ## Maven Credentials
 
-Create or update `~/.m2/settings.xml` with your Central token:
+Create or update `~/.gradle/gradle.properties` with your Central Portal token:
 
-```xml
-<settings>
-  <servers>
-    <server>
-      <id>central</id>
-      <username><!-- Central token username --></username>
-      <password><!-- Central token password --></password>
-    </server>
-  </servers>
-</settings>
+```properties
+centralPortalUsername=...
+centralPortalPassword=...
+signingInMemoryKey=...
+signingInMemoryKeyPassword=...
 ```
-
-The server id must stay `central` because that is what the root POM uses.
 
 ## GPG
 
@@ -46,7 +39,7 @@ gpg --list-secret-keys --keyid-format LONG
 gpg --keyserver keyserver.ubuntu.com --send-keys YOUR_KEY_ID
 ```
 
-If your key is protected by a passphrase, make sure `gpg-agent` is available before running Maven.
+If your key is protected by a passphrase, make sure the signing key password is configured before running Gradle.
 
 ## Release Steps
 
@@ -56,7 +49,7 @@ If your key is protected by a passphrase, make sure `gpg-agent` is available bef
 4. Run a full local verification build:
 
 ```bash
-mvn clean verify
+./gradlew clean test
 ```
 
 5. Create the release tag that matches the POM SCM metadata:
@@ -69,24 +62,11 @@ git push origin v0.2.0
 6. Publish the release bundle to Central:
 
 ```bash
-mvn -Pcentral-publish deploy
+./gradlew publishAllPublicationsToCentralPortal
 ```
 
-The current configuration uses:
-
-- `autoPublish=false`
-- `waitUntil=VALIDATED`
-
-That means Maven uploads and validates the release bundle, but does not publish it automatically. Finish the release in the Central Portal UI after validation succeeds.
+The current configuration uses the Central Portal plugin with automatic publication enabled. If the upload validates successfully, Sonatype will complete the release flow automatically.
 
 ## What Gets Published
 
-Each module is published independently under `io.liquidsoftware`:
-
-- `acl-core`
-- `acl-arrow`
-- `acl-ktor`
-- `acl-spring-security`
-- `acl-spring-security-arrow`
-
-The root `acl` artifact is published as a parent/aggregator `pom`.
+The current project publishes a single `acl` artifact under `io.liquidsoftware`.
