@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-12
+
 ### Added
 
 - `aclCatalog<S> { ... }` returns an `AclCatalog<S>`, so passing the wrong subject type is a compile error.
@@ -17,7 +19,6 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 ### Changed
 
 - Rewrote `AGENTS.md`, the README and the docs for the single-module, single-package API. Publishing instructions now live only in `RELEASING.md`.
-- Set the in-development version to `0.4.0-SNAPSHOT`, since the unreleased changes are breaking.
 
 ### Fixed
 

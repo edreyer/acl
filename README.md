@@ -14,13 +14,11 @@
 
 ```kotlin
 dependencies {
-    implementation("io.liquidsoftware:acl:0.4.0-SNAPSHOT")
+    implementation("io.liquidsoftware:acl:0.4.0")
 }
 ```
 
 **Upgrading from 0.3?** Follow the [migration guide](docs/migrating-to-0.4.md).
-
-This README describes the in-development `0.4.0` API. Until it is released, use a [local build](#using-a-local-build). The latest release on Maven Central, `0.3.0`, has the older API described in [CHANGELOG.md](CHANGELOG.md).
 
 ## Quick Start
 
