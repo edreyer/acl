@@ -50,14 +50,14 @@ If your key is protected by a passphrase, make sure the signing password is conf
 4. Run a full local verification build:
 
 ```bash
-./gradlew clean test
+./gradlew clean test detekt
 ```
 
 5. Create the release tag that matches the POM SCM metadata:
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 6. Publish the release bundle to Central:

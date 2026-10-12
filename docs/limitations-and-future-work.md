@@ -1,146 +1,35 @@
-# ACL Library Limitations and Future Work
+# Limitations and Future Work
 
-This document captures the current weaknesses of the implementation and concrete ideas for improving it later.
-
-## Current strengths
-
-- simple public API
-- clear allow-only rule model
-- `Manage` implies lower operations
-- catalog-based collection helpers
-- modular policy definitions
+Known limitations of the current design, and ideas for addressing them. Nothing here is a commitment.
 
 ## Current limitations
 
-### 1. Ambiguous resource routing fails at check time
+### Operations are a fixed set
 
-Resources are routed to the policy registered for their most specific supertype, so subclasses, ORM proxies, and sealed hierarchies resolve to the expected policy.
+`Operation` is an enum of `Read`, `Write` and `Manage`. Applications that need `Delete`, `Share`, `Approve` and similar operations currently have to map them onto these three.
 
-If a resource matches two registered types where neither is a subtype of the other (for example, two interfaces it implements), the check throws `IllegalStateException`. Because the catalog cannot know every runtime type up front, this is detected on the first check for that type rather than when the catalog is built.
+Idea: make `Operation` an open interface with the three built-ins, where `Manage` keeps covering every operation, so applications can declare their own (`data object Approve : Operation`).
 
-### 2. Policy lookup still has one narrow unchecked cast boundary
+### Denial reasons are minimal
 
-The public API is generic and pleasant to use, and the catalog now stores typed policy bindings with subject/resource metadata. There is still one internal cast when the binding delegates into the typed policy.
+`NoMatchingAllowRule` carries no data, so its message is always "No matching allow rule". That is thin for logs and audits.
 
-Implications:
+Idea: include the requested operation and the resource type, for example "No rule allows Read on Book".
 
-- the API is still not fully compile-time safe at the catalog boundary
-- the runtime validation is better contained than before
-- incorrect registration or type mismatches are still caught at runtime, not compile time
+### A missing policy looks like a normal denial
 
-### 3. Denial reasons are structured, but still minimal
+A resource with no registered policy is denied with `NoPolicyRegistered`. Through the boolean `can*` checks this is indistinguishable from an ordinary denial, even though it is usually a wiring mistake.
 
-The current behavior is to return `Denied(Reason)` with a small denial-reason ADT for both policy-level denials and missing-policy catalog denials.
+Ideas: a `hasPolicyFor(resource)` check that callers can assert in tests, or a catalog option that reports missing policies.
 
-Implications:
+### Ambiguous routing is detected on first use
 
-- the behavior is predictable
-- but the contract is not yet fully structured
-- the reason model is intentionally small and not yet expressive enough for auditing or user-facing explanations
+Resources route to the policy for their most specific registered type. If a resource matches two registered types and neither is a subtype of the other, the check throws `IllegalStateException`. Because the catalog cannot know every runtime type up front, this is found on the first check for that type, not when the catalog is built.
 
-### 4. Batch decision metadata is minimal
+### Allow-only rules
 
-The batch result currently carries per-item granted/denied state, but not richer auditing information.
+There is no `deny(...)`. Adding one requires clear precedence rules, so it should wait until a real use case needs it.
 
-Implications:
+### No framework integrations
 
-- useful for filtering and boolean checks
-- still thin for debugging or audit-heavy applications
-
-### 5. The DSL is functional but still generic
-
-The policy DSL works, but it is still close to a low-level rule builder.
-
-Implications:
-
-- it is readable
-- but it could be more domain-expressive and concise for common patterns
-
-### 6. No explicit deny rules yet
-
-The current model is allow-only.
-
-Implications:
-
-- this keeps v1 simple
-- but some real systems need explicit deny and precedence rules
-
-## Future improvement ideas
-
-### Strongly typed catalog registration
-
-Improve registration so the catalog retains stronger type information and reduces reliance on casts.
-
-Possible approaches:
-
-- typed policy keys
-- a richer policy descriptor
-- a registry that stores the resource type and policy together in a typed wrapper
-
-### Better decision reasons
-
-Expand the denial-reason ADT with richer variants for auditing and user-facing explanations.
-
-Possible shape:
-
-- `MissingPolicy`
-- `NoMatchingRule`
-- `ExplicitlyDenied`
-- `UnknownFailure`
-
-### Explicit deny rules
-
-Add `deny(...)` alongside `allow(...)` if the user needs it.
-
-This would require defining precedence rules clearly.
-
-### More expressive DSL sugar
-
-Add convenience forms for common cases:
-
-- owner-based rules
-- global subject-only access
-- rule naming
-- policy naming
-
-Example goal:
-
-- make the common `User` / `Book` ownership rule read almost like business language
-
-### Batch audit output
-
-Extend batch results with:
-
-- policy name
-- rule match details
-- denial reason per item
-
-This would help when the catalog is used for audits or troubleshooting.
-
-### Optional policy composition helpers
-
-Add helpers for common assembly patterns:
-
-- register multiple policies from a module
-- create a catalog from a list of policies
-- merge catalogs where appropriate
-
-### Documentation and examples
-
-Add a small set of executable examples showing:
-
-- ownership checks
-- system admin checks
-- collection filtering
-- batch decisions
-
-This would make the API easier to learn and harder to misuse.
-
-## Recommended next iteration
-
-If we continue after v1, the most valuable improvements are probably:
-
-1. structured denial reasons
-2. more expressive DSL helpers
-
-Those give the best balance of usability and safety without complicating the first release too much.
+There are no Arrow, Spring Security or Ktor adapters today. If they return, each should be a separate module that depends on the core (see `AGENTS.md`).
