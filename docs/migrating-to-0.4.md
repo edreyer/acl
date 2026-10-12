@@ -191,9 +191,13 @@ policy<Contract> { }  // denies everything for Contract, regardless of the Docum
 
 In 0.3 a subject had to be exactly the policy's subject class, otherwise `decide` threw `IllegalArgumentException`. In 0.4 any subtype of the catalog's subject type is accepted, which is what makes sealed principals work.
 
-### Ambiguous routing throws
+### Ambiguous routing is denied
 
-If a resource matches two registered types and neither is a subtype of the other (for example `policy<Shareable>` and `policy<Archivable>`, and a class that implements both), the check throws `IllegalStateException` naming both types. Fix it by registering a policy for the concrete type. This is detected on the first check for that type, not when the catalog is built.
+If a resource matches two registered types and neither is a subtype of the other (for example `policy<Shareable>` and `policy<Archivable>`, and a class that implements both), the check is denied with `AmbiguousPolicy`, which names both types. Fix it by registering a policy for the concrete type. Checks never throw for this.
+
+### `policy<Any>` is rejected
+
+Because of subtype routing, a policy for `Any` would apply to every resource that has no policy of its own and replace default deny. Registering one throws `IllegalArgumentException` when the catalog is built.
 
 ### Unchanged
 

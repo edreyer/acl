@@ -79,7 +79,7 @@ class AclTypeHierarchyTest {
     }
 
     @Test
-    fun ambiguous_policies_fail_fast() {
+    fun ambiguous_policies_deny_with_a_reason() {
         val ambiguousCatalog = aclCatalog<Principal> {
             policy<Shareable> {
                 allow(Operation.Read) { _ -> true }
@@ -89,11 +89,54 @@ class AclTypeHierarchyTest {
             }
         }
 
-        val exception = assertFailsWith<IllegalStateException> {
-            ambiguousCatalog.canRead(Member("bob"), Report())
+        repeat(2) {
+            val decision = ambiguousCatalog.decide(Member("bob"), Operation.Read, Report())
+            assertEquals(
+                AccessDecision.Denied(AmbiguousPolicy(Report::class, listOf(Shareable::class, Archivable::class))),
+                decision,
+            )
+        }
+        assertFalse(ambiguousCatalog.canRead(Member("bob"), Report()))
+    }
+
+    @Test
+    fun ambiguity_is_resolved_by_a_policy_for_the_concrete_type() {
+        val resolvedCatalog = aclCatalog<Principal> {
+            policy<Shareable> {
+                allow(Operation.Read) { _ -> true }
+            }
+            policy<Archivable> {
+                allow(Operation.Read) { _ -> false }
+            }
+            policy<Report> {
+                allow(Operation.Read) { principal -> principal is Admin }
+            }
         }
 
-        assertTrue(exception.message!!.contains("Ambiguous"))
+        assertTrue(resolvedCatalog.canRead(Admin("root"), Report()))
+        assertFalse(resolvedCatalog.canRead(Member("bob"), Report()))
+    }
+
+    @Test
+    fun policy_for_any_is_rejected() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            aclCatalog<Principal> {
+                policy<Any> {
+                    allow(Operation.Read) { _ -> true }
+                }
+            }
+        }
+
+        assertTrue(exception.message!!.contains("Any"))
+    }
+
+    @Test
+    fun registered_policy_for_any_is_rejected() {
+        val anyPolicy = aclPolicy<Principal, Any> { allow(Operation.Read) { _ -> true } }
+
+        assertFailsWith<IllegalArgumentException> {
+            aclCatalog<Principal> { register(anyPolicy) }
+        }
     }
 
     @Test

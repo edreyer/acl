@@ -24,7 +24,8 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - `./gradlew publishToMavenLocal` no longer requires a GPG key; artifacts are only required to be signed when publishing to Maven Central.
 - Subjects that are subtypes of a policy's subject type (for example, members of a sealed hierarchy) are now accepted instead of failing with `IllegalArgumentException`.
 - Resources whose runtime type is a subtype of a registered resource type (subclasses, interface implementations, ORM proxies) now route to the most specific matching policy instead of being denied with `NoPolicyRegistered`.
-- A resource that matches two unrelated registered types now fails fast with a clear `IllegalStateException`.
+- A resource that matches two unrelated registered types is denied with the new `AmbiguousPolicy` reason, which names the types, instead of throwing during the check.
+- Registering a policy for `Any` is rejected when the catalog is built, since with subtype routing it would replace default deny for every unregistered type.
 
 ### Breaking Changes
 
