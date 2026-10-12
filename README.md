@@ -7,7 +7,7 @@
 - pure Kotlin, no framework dependencies
 - one policy per resource type, written as a small DSL over your own domain types
 - allow-only rules with default deny
-- `Manage` implies `Read` and `Write`
+- built-in `Read`, `Write` and `Manage` operations, plus your own; `Manage` implies all of them
 - denials are values with a reason, not exceptions
 
 ## Installation
@@ -66,9 +66,38 @@ policy<Book> {
 }
 ```
 
-Any matching rule grants access. If no rule matches, the decision is `Denied(NoMatchingAllowRule)`. A rule for `Manage` also grants `Read` and `Write`.
+Any matching rule grants access. If no rule matches, the decision is `Denied(NoMatchingAllowRule)`. A rule for `Manage` also grants `Read`, `Write` and any custom operation.
 
 Policies can be declared inline with `policy<R> { ... }` or built separately with `aclPolicy<User, Book> { ... }` and added with `register(policy)`, which is useful when a policy lives next to the resource it protects.
+
+## Custom Operations
+
+`Read`, `Write` and `Manage` are built in. Declare your own operations as objects:
+
+```kotlin
+import io.liquidsoftware.acl.Operation
+
+data object Approve : Operation
+data object Share : Operation
+
+val acl = aclCatalog<User> {
+    policy<Invoice> {
+        allow(Manage) { user -> user.isSystemAdmin }
+        allow(Approve) { user, invoice -> user.id == invoice.approverId }
+    }
+}
+
+acl.can(bob, Approve, invoice)
+acl.forSubject(bob).can(Share, invoice)
+```
+
+A custom operation covers only itself, and `Manage` covers every operation. To make one operation grant others, override `covers`:
+
+```kotlin
+data object Edit : Operation {
+    override fun covers(requested: Operation) = requested == Edit || requested == Read || requested == Write
+}
+```
 
 ## Checking Many Resources
 
@@ -122,7 +151,7 @@ The following behavior is covered by tests:
 - resources route to the policy for their most specific registered type
 - ambiguous routing fails fast; duplicate registration for one type is rejected
 - one `allow` rule can grant several operations
-- `Manage` implies `Read` and `Write`; `Read` and `Write` do not imply each other
+- `Manage` implies every operation, including custom ones; other operations imply only themselves unless they override `covers`
 - empty policies deny all access; resources with no policy are denied
 - denied decisions carry a structured reason with a human-readable message
 

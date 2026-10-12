@@ -12,6 +12,7 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - `AclCatalog.forSubject(subject)` returns a `SubjectAccess<S>` whose `canRead`/`canWrite`/`canManage`/`can`/`decide` compose with Kotlin collection functions, for example `books.filter(access::canRead)`.
 - `allow(...)` accepts several operations, for example `allow(Read, Write) { user, book -> ... }`.
 - The build now uses Kotlin explicit API mode.
+- Applications can declare their own operations (`data object Approve : Operation`). `Manage` covers them too, and an operation can grant others by overriding `covers`.
 
 ### Changed
 
@@ -31,6 +32,7 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - `AclCatalog` methods take `resource: Any` and a subject of the catalog's type instead of free type parameters. The runtime "Expected subject of type" check is gone because the compiler enforces it.
 - Removed the collection helpers `canAll`, `canReadAll`, `canWriteAll`, `canManageAll`, `filterBy`, `filterReadableBy`, `filterWritableBy`, `filterManageableBy`, `partitionBy`, `partitionReadableBy`, `partitionWritableBy`, `partitionManageableBy` and `decideAll`, along with `BatchAccessDecision`, `ItemAccessDecision` and `AccessPartition`. Use `forSubject` with `filter`, `partition`, `all` or `associateWith`.
 - `AclRule` is no longer public, and `AclPolicy.resourceType` is internal.
+- `Operation` is now an interface instead of an enum. `Operation.Read`, `Operation.Write` and `Operation.Manage` keep their names, but `Operation.entries`, `values()`, `valueOf()` and exhaustive `when` over operations are gone.
 
 ## [0.3.0] - 2026-04-14
 
