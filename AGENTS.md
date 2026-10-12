@@ -62,7 +62,7 @@ Resolving the "current subject" is always adapter logic, never core logic.
 ## Testing Expectations
 
 - Every public behavior has a direct test.
-- `ReadmeExamplesTest` mirrors the README examples. If you change an example in `README.md`, update that test in the same change.
+- `ReadmeExamplesTest` mirrors the README examples and `MigrationGuideExamplesTest` mirrors the 0.4 code in `docs/migrating-to-0.4.md`. If you change an example in either doc, update its test in the same change.
 - Run `./gradlew test detekt` before pushing; CI runs the same.
 
 ## Documentation
