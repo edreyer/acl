@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+### Fixed
+
+- Subjects that are subtypes of a policy's subject type (for example, members of a sealed hierarchy) are now accepted instead of failing with `IllegalArgumentException`.
+- Resources whose runtime type is a subtype of a registered resource type (subclasses, interface implementations, ORM proxies) now route to the most specific matching policy instead of being denied with `NoPolicyRegistered`.
+- A resource that matches two unrelated registered types now fails fast with a clear `IllegalStateException`.
+
 ### Added
 
 - Added a new single-module Gradle build as part of the project reset.

@@ -180,7 +180,7 @@ Use an allow-only, default-deny policy engine with:
 - operation inheritance where `Manage` covers `Read` and `Write`
 - consumer-defined subject attributes and predicates, with no hardcoded admin concept in the engine
 - an application-facing authorization catalog that composes policies and offers collection-oriented helpers
-- exact-match resource routing by runtime resource type
+- resource routing by runtime type, using the policy registered for the most specific supertype
 - fail-fast validation for subject type mismatches
 - internal type metadata captured at policy registration time to reduce unsafe casts
 
