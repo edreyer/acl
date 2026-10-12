@@ -18,7 +18,7 @@ It should stay small, generic, and easy to understand for users who were not inv
   - `SubjectAccess<S>`: the same checks with the subject bound
   - `aclPolicy<S, R> { allow(op, ...) { ... } }` returns `AclPolicy<S, R>`
   - `Operation`: an open interface with built-in `Read`, `Write` and `Manage` (which covers `Read` and `Write`, never custom operations); users declare their own as objects
-  - `AccessDecision` (`Granted`, `Denied`), `DenialReason` (`NoMatchingAllowRule`, `NoPolicyRegistered`)
+  - `AccessDecision` (`Granted`, `Denied`), `DenialReason` (`NoMatchingAllowRule`, `NoPolicyRegistered`, `AmbiguousPolicy`)
 - Internals: `AclRule`, `AclPolicyRegistry` (routes a resource to the policy for its most specific registered type and caches the result per class).
 
 ## Design Rules
@@ -37,7 +37,7 @@ Subjects, resources and their attributes are the caller's own types. Rules are p
 
 A denied check returns `false` or `AccessDecision.Denied(reason)`. Do not use exceptions for normal denial.
 
-Exceptions are only for programmer or configuration errors, such as registering two policies for one type or ambiguous routing.
+Exceptions are only for programmer or configuration errors caught while building the catalog, such as registering two policies for one type or a `policy<Any>`. Checks never throw: problems found at check time, such as ambiguous routing, are denials.
 
 ### Let the compiler do the work
 

@@ -17,6 +17,12 @@ class DenialReasonTest {
         )
 
         assertEquals(
+            "Ambiguous policies for kotlin.String: kotlin.CharSequence, kotlin.Comparable. " +
+                "Register a policy for kotlin.String to resolve it.",
+            AmbiguousPolicy(String::class, listOf(CharSequence::class, Comparable::class)).toString(),
+        )
+
+        assertEquals(
             "Denied(reason=No matching allow rule)",
             AccessDecision.Denied(NoMatchingAllowRule).toString(),
         )

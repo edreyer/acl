@@ -18,7 +18,7 @@ Ideas: a `hasPolicyFor(resource)` check that callers can assert in tests, or a c
 
 ### Ambiguous routing is detected on first use
 
-Resources route to the policy for their most specific registered type. If a resource matches two registered types and neither is a subtype of the other, the check throws `IllegalStateException`. Because the catalog cannot know every runtime type up front, this is found on the first check for that type, not when the catalog is built.
+Resources route to the policy for their most specific registered type. If a resource matches two registered types and neither is a subtype of the other, the check is denied with `AmbiguousPolicy`. Because the catalog cannot know every runtime type up front, this is found on the first check for that type, not when the catalog is built. Through the boolean `can*` checks it looks like an ordinary denial.
 
 ### Allow-only rules
 

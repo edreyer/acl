@@ -151,7 +151,9 @@ acl.canRead(Member("bob"), Contract("bob"))        // true, uses the Document po
 acl.canRead(Member("bob"), SecretDocument("bob"))  // false, SecretDocument has its own policy
 ```
 
-If a resource matches two registered types and neither is a subtype of the other (for example, two interfaces it implements), the check throws `IllegalStateException`. A resource with no matching policy is denied with `NoPolicyRegistered`.
+If a resource matches two registered types and neither is a subtype of the other (for example, two interfaces it implements), it is denied with `AmbiguousPolicy`, which names both types. Register a policy for the concrete type to resolve it. A resource with no matching policy is denied with `NoPolicyRegistered`.
+
+`policy<Any>` is rejected when the catalog is built, because it would apply to every resource without its own policy and quietly replace default deny.
 
 ## Behavior
 
@@ -160,7 +162,7 @@ The following behavior is covered by tests:
 - the catalog's subject type is checked at compile time
 - subjects may be any subtype of the catalog's subject type
 - resources route to the policy for their most specific registered type
-- ambiguous routing fails fast; duplicate registration for one type is rejected
+- ambiguous routing is denied with `AmbiguousPolicy`; duplicate registration for one type and `policy<Any>` are rejected when the catalog is built
 - one `allow` rule can grant several operations
 - `Manage` implies `Read` and `Write` but not custom operations; other operations imply only themselves unless they override `covers`
 - empty policies deny all access; resources with no policy are denied
