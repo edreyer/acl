@@ -1,8 +1,5 @@
 package io.liquidsoftware.acl
 
-import io.liquidsoftware.acl.decision.AccessDecision
-import io.liquidsoftware.acl.decision.NoMatchingAllowRule
-import io.liquidsoftware.acl.policy.aclPolicy
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -128,5 +125,31 @@ class AclPolicyTest {
         assertTrue(manageOnlyPolicy.decide(admin, Operation.Manage, book).granted)
         assertTrue(manageOnlyPolicy.decide(admin, Operation.Read, book).granted)
         assertTrue(manageOnlyPolicy.decide(admin, Operation.Write, book).granted)
+    }
+
+    @Test
+    fun one_rule_can_allow_several_operations() {
+        val ownerPolicy = aclPolicy<User, Book> {
+            allow(Operation.Read, Operation.Write) { user, book -> user.id == book.userId }
+        }
+        val bob = User(id = "bob", isSystemAdmin = false)
+        val book = Book(userId = "bob")
+
+        assertTrue(ownerPolicy.decide(bob, Operation.Read, book).granted)
+        assertTrue(ownerPolicy.decide(bob, Operation.Write, book).granted)
+        assertEquals(
+            AccessDecision.Denied(NoMatchingAllowRule),
+            ownerPolicy.decide(bob, Operation.Manage, book),
+        )
+    }
+
+    @Test
+    fun subject_only_rule_accepts_implicit_it() {
+        val adminPolicy = aclPolicy<User, Book> {
+            allow(Operation.Manage) { it.isSystemAdmin }
+        }
+        val admin = User(id = "root", isSystemAdmin = true)
+
+        assertTrue(adminPolicy.decide(admin, Operation.Read, Book(userId = "bob")).granted)
     }
 }

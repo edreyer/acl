@@ -1,8 +1,5 @@
 package io.liquidsoftware.acl
 
-import io.liquidsoftware.acl.catalog.aclCatalog
-import io.liquidsoftware.acl.decision.AccessDecision
-import io.liquidsoftware.acl.decision.NoPolicyRegistered
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -25,12 +22,12 @@ class AclTypeHierarchyTest {
     private interface Archivable
     private class Report : Shareable, Archivable
 
-    private val catalog = aclCatalog {
-        policy<Principal, Document> {
+    private val catalog = aclCatalog<Principal> {
+        policy<Document> {
             allow(Operation.Manage) { principal -> principal is Admin }
             allow(Operation.Read) { principal, document -> principal.id == document.ownerId }
         }
-        policy<Principal, SecretDocument> {
+        policy<SecretDocument> {
             allow(Operation.Manage) { principal -> principal is Admin }
         }
     }
@@ -72,8 +69,8 @@ class AclTypeHierarchyTest {
 
     @Test
     fun policy_registered_for_an_interface_matches_implementations() {
-        val interfaceCatalog = aclCatalog {
-            policy<Principal, Shareable> {
+        val interfaceCatalog = aclCatalog<Principal> {
+            policy<Shareable> {
                 allow(Operation.Read) { _ -> true }
             }
         }
@@ -83,11 +80,11 @@ class AclTypeHierarchyTest {
 
     @Test
     fun ambiguous_policies_fail_fast() {
-        val ambiguousCatalog = aclCatalog {
-            policy<Principal, Shareable> {
+        val ambiguousCatalog = aclCatalog<Principal> {
+            policy<Shareable> {
                 allow(Operation.Read) { _ -> true }
             }
-            policy<Principal, Archivable> {
+            policy<Archivable> {
                 allow(Operation.Read) { _ -> false }
             }
         }
@@ -101,8 +98,8 @@ class AclTypeHierarchyTest {
 
     @Test
     fun boxed_primitive_resources_match_supertype_policies() {
-        val numberCatalog = aclCatalog {
-            policy<Principal, Number> {
+        val numberCatalog = aclCatalog<Principal> {
+            policy<Number> {
                 allow(Operation.Read) { _ -> true }
             }
         }

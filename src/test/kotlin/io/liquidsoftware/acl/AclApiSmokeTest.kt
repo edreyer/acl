@@ -1,7 +1,10 @@
 package io.liquidsoftware.acl
 
-import io.liquidsoftware.acl.catalog.aclCatalog
+import io.liquidsoftware.acl.Operation.Manage
+import io.liquidsoftware.acl.Operation.Read
+import io.liquidsoftware.acl.Operation.Write
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -11,21 +14,23 @@ import kotlin.test.assertTrue
 class AclApiSmokeTest {
     @Test
     fun public_api_wires_policy_builder_into_catalog() {
-        val catalog = aclCatalog {
-            policy<User, Book> {
-                allow(Operation.Manage) { user -> user.isSystemAdmin }
-                allow(Operation.Read) { user, book -> user.id == book.userId }
-                allow(Operation.Write) { user, book -> user.id == book.userId }
+        val acl = aclCatalog<User> {
+            policy<Book> {
+                allow(Manage) { user -> user.isSystemAdmin }
+                allow(Read, Write) { user, book -> user.id == book.userId }
             }
         }
 
         val bob = User(id = "bob", isSystemAdmin = false)
         val admin = User(id = "root", isSystemAdmin = true)
         val book = Book(userId = "bob")
+        val books = listOf(book, Book(userId = "alice"))
 
-        assertTrue(catalog.canRead(bob, book))
-        assertTrue(catalog.canWrite(bob, book))
-        assertTrue(catalog.canManage(admin, book))
-        assertTrue(catalog.canReadAll(bob, listOf(book)))
+        assertTrue(acl.canRead(bob, book))
+        assertTrue(acl.canWrite(bob, book))
+        assertTrue(acl.canManage(admin, book))
+
+        val access = acl.forSubject(bob)
+        assertEquals(listOf(book), books.filter(access::canRead))
     }
 }

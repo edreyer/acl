@@ -10,7 +10,7 @@ The library is intentionally small:
 - allow-only rules
 - `Manage` implies `Read` and `Write`
 - type-aware resource routing (subtypes use the most specific registered policy)
-- collection helpers for batch checks and filtering
+- subject-bound checks that compose with Kotlin collections
 
 ## Installation
 
@@ -86,49 +86,51 @@ Before publishing, make sure:
 ## Quick Start
 
 ```kotlin
-import io.liquidsoftware.acl.Operation
-import io.liquidsoftware.acl.catalog.aclCatalog
-import io.liquidsoftware.acl.policy.aclPolicy
+import io.liquidsoftware.acl.AccessDecision
+import io.liquidsoftware.acl.Operation.Manage
+import io.liquidsoftware.acl.Operation.Read
+import io.liquidsoftware.acl.Operation.Write
+import io.liquidsoftware.acl.aclCatalog
 
 data class User(val id: String, val isSystemAdmin: Boolean)
 data class Book(val userId: String)
 
-val bookPolicy = aclPolicy<User, Book> {
-    allow(Operation.Manage) { user -> user.isSystemAdmin }
-    allow(Operation.Read) { user, book -> user.id == book.userId }
-    allow(Operation.Write) { user, book -> user.id == book.userId }
-}
-
-val catalog = aclCatalog {
-    register(bookPolicy)
+val acl = aclCatalog<User> {
+    policy<Book> {
+        allow(Manage) { user -> user.isSystemAdmin }
+        allow(Read, Write) { user, book -> user.id == book.userId }
+    }
 }
 
 val bob = User(id = "bob", isSystemAdmin = false)
 val admin = User(id = "root", isSystemAdmin = true)
 val book = Book(userId = "bob")
 
-catalog.canRead(bob, book)
-catalog.canWrite(bob, book)
-catalog.canManage(admin, book)
+acl.canRead(bob, book)      // true
+acl.canWrite(bob, book)     // true
+acl.canManage(admin, book)  // true
 
-val decision = catalog.decide(bob, Operation.Read, Book(userId = "alice"))
-decision.granted
-decision.reason.message
+val decision = acl.decide(bob, Read, Book(userId = "alice"))
+decision.granted            // false
+(decision as AccessDecision.Denied).reason.message  // "No matching allow rule"
 ```
 
-## Collection Helpers
+The catalog is typed on the subject, so `acl.canRead("bob", book)` does not compile.
+
+Policies can also be built on their own with `aclPolicy<User, Book> { ... }` and added with `register(policy)`, which is useful when policies live next to the resources they protect.
+
+## Checking Many Resources
+
+Bind the subject once with `forSubject`, then use Kotlin's collection functions:
 
 ```kotlin
-catalog.canReadAll(bob, books)
-catalog.canWriteAll(bob, books)
-catalog.canManageAll(bob, books)
-catalog.filterReadableBy(bob, books)
-catalog.filterWritableBy(bob, books)
-catalog.filterManageableBy(bob, books)
-catalog.partitionReadableBy(bob, books)
-catalog.partitionWritableBy(bob, books)
-catalog.partitionManageableBy(bob, books)
-catalog.decideAll(bob, Operation.Read, books)
+val access = acl.forSubject(bob)
+
+access.canRead(book)
+books.filter(access::canRead)
+val (editable, readOnly) = books.partition(access::canWrite)
+books.all(access::canManage)
+books.associateWith { access.decide(Read, it) }
 ```
 
 ## Contract
@@ -139,10 +141,10 @@ The stable behavior is covered by tests and includes:
 - subjects may be any subtype of the policy's subject type, including sealed hierarchies
 - ambiguous routing (two unrelated matching supertypes) fails fast
 - duplicate registration rejection
-- fail-fast validation for wrong subject type
+- the catalog's subject type is checked at compile time
+- one `allow` rule can grant several operations
 - `Manage` implies `Read` and `Write`
 - `Read` and `Write` do not imply each other
-- empty collections are granted by `can*All(...)`
 - empty policies deny all access
 - empty catalogs deny unknown resources
 - denied decisions carry a structured reason with a human-readable message
