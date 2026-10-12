@@ -53,6 +53,34 @@ class ReadmeExamplesTest {
         )
     }
 
+    private data class Invoice(val approverId: String)
+
+    private data object Approve : Operation
+
+    private data object Share : Operation
+
+    private data object Edit : Operation {
+        override fun covers(requested: Operation) = requested == Edit || requested == Read || requested == Write
+    }
+
+    @Test
+    fun custom_operations() {
+        val acl = aclCatalog<User> {
+            policy<Invoice> {
+                allow(Manage) { user -> user.isSystemAdmin }
+                allow(Approve) { user, invoice -> user.id == invoice.approverId }
+            }
+        }
+        val invoice = Invoice(approverId = "bob")
+
+        assertTrue(acl.can(bob, Approve, invoice))
+        assertFalse(acl.forSubject(bob).can(Share, invoice))
+        assertTrue(acl.forSubject(admin).can(Share, invoice))
+        assertTrue(Edit.covers(Read))
+        assertTrue(Edit.covers(Write))
+        assertFalse(Edit.covers(Manage))
+    }
+
     private sealed interface Principal {
         val id: String
     }

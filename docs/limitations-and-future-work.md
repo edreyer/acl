@@ -4,12 +4,6 @@ Known limitations of the current design, and ideas for addressing them. Nothing 
 
 ## Current limitations
 
-### Operations are a fixed set
-
-`Operation` is an enum of `Read`, `Write` and `Manage`. Applications that need `Delete`, `Share`, `Approve` and similar operations currently have to map them onto these three.
-
-Idea: make `Operation` an open interface with the three built-ins, where `Manage` keeps covering every operation, so applications can declare their own (`data object Approve : Operation`).
-
 ### Denial reasons are minimal
 
 `NoMatchingAllowRule` carries no data, so its message is always "No matching allow rule". That is thin for logs and audits.

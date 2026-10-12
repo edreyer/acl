@@ -17,7 +17,8 @@ It should stay small, generic, and easy to understand for users who were not inv
   - `AclCatalog<S>`: `decide`, `can`, `canRead`, `canWrite`, `canManage`, `forSubject`
   - `SubjectAccess<S>`: the same checks with the subject bound
   - `aclPolicy<S, R> { allow(op, ...) { ... } }` returns `AclPolicy<S, R>`
-  - `Operation` (`Read`, `Write`, `Manage`), `AccessDecision` (`Granted`, `Denied`), `DenialReason` (`NoMatchingAllowRule`, `NoPolicyRegistered`)
+  - `Operation`: an open interface with built-in `Read`, `Write` and `Manage` (which covers every operation); users declare their own as objects
+  - `AccessDecision` (`Granted`, `Denied`), `DenialReason` (`NoMatchingAllowRule`, `NoPolicyRegistered`)
 - Internals: `AclRule`, `AclPolicyRegistry` (routes a resource to the policy for its most specific registered type and caches the result per class).
 
 ## Design Rules
