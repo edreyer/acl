@@ -18,6 +18,8 @@ dependencies {
 }
 ```
 
+**Upgrading from 0.3?** Follow the [migration guide](docs/migrating-to-0.4.md).
+
 This README describes the in-development `0.4.0` API. Until it is released, use a [local build](#using-a-local-build). The latest release on Maven Central, `0.3.0`, has the older API described in [CHANGELOG.md](CHANGELOG.md).
 
 ## Quick Start
@@ -171,6 +173,7 @@ includeBuild("../acl")
 
 ## More
 
+- [docs/migrating-to-0.4.md](docs/migrating-to-0.4.md) explains how to upgrade from 0.3.
 - [CHANGELOG.md](CHANGELOG.md) lists changes by release.
 - [RELEASING.md](RELEASING.md) covers publishing to Maven Central.
 - [docs/limitations-and-future-work.md](docs/limitations-and-future-work.md) tracks known limitations and ideas.

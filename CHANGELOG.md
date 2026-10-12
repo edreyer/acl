@@ -27,6 +27,8 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ### Breaking Changes
 
+See [the migration guide](docs/migrating-to-0.4.md) for step-by-step upgrade instructions.
+
 - All public types moved to the single package `io.liquidsoftware.acl`. The `catalog`, `decision` and `policy` subpackages are gone.
 - `aclCatalog { policy<User, Book> { ... } }` is now `aclCatalog<User> { policy<Book> { ... } }`.
 - `AclCatalog` methods take `resource: Any` and a subject of the catalog's type instead of free type parameters. The runtime "Expected subject of type" check is gone because the compiler enforces it.
