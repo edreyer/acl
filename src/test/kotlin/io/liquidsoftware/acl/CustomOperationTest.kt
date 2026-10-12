@@ -42,10 +42,39 @@ class CustomOperationTest {
     }
 
     @Test
-    fun manage_covers_custom_operations() {
-        assertTrue(Manage.covers(Approve))
-        assertTrue(acl.can(admin, Approve, invoice))
-        assertTrue(acl.can(admin, Share, invoice))
+    fun manage_does_not_cover_custom_operations() {
+        assertFalse(Manage.covers(Approve))
+        assertFalse(Manage.covers(Edit))
+        assertFalse(acl.can(admin, Approve, invoice))
+        assertFalse(acl.can(admin, Share, invoice))
+        assertTrue(acl.canManage(admin, invoice))
+    }
+
+    @Test
+    fun manage_holder_gets_a_custom_operation_only_when_a_rule_names_it() {
+        val withAdminApproval = aclCatalog<User> {
+            policy<Invoice> {
+                allow(Manage, Approve) { user -> user.isSystemAdmin }
+            }
+        }
+
+        assertTrue(withAdminApproval.can(admin, Approve, invoice))
+        assertFalse(withAdminApproval.can(admin, Share, invoice))
+    }
+
+    @Test
+    fun plain_class_operation_only_matches_the_same_instance() {
+        class Archive : Operation
+
+        val archive = Archive()
+        val archiveAcl = aclCatalog<User> {
+            policy<Invoice> {
+                allow(archive) { user, invoice -> user.id == invoice.ownerId }
+            }
+        }
+
+        assertTrue(archiveAcl.can(bob, archive, invoice))
+        assertFalse(archiveAcl.can(bob, Archive(), invoice))
     }
 
     @Test

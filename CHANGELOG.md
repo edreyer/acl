@@ -12,7 +12,7 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - `AclCatalog.forSubject(subject)` returns a `SubjectAccess<S>` whose `canRead`/`canWrite`/`canManage`/`can`/`decide` compose with Kotlin collection functions, for example `books.filter(access::canRead)`.
 - `allow(...)` accepts several operations, for example `allow(Read, Write) { user, book -> ... }`.
 - The build now uses Kotlin explicit API mode.
-- Applications can declare their own operations (`data object Approve : Operation`). `Manage` covers them too, and an operation can grant others by overriding `covers`.
+- Applications can declare their own operations (`data object Approve : Operation`). A custom operation is granted only by rules that name it (`Manage` does not cover it), and an operation can grant others by overriding `covers`.
 
 ### Changed
 
