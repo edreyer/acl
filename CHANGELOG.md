@@ -12,14 +12,11 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - `AclCatalog.forSubject(subject)` returns a `SubjectAccess<S>` whose `canRead`/`canWrite`/`canManage`/`can`/`decide` compose with Kotlin collection functions, for example `books.filter(access::canRead)`.
 - `allow(...)` accepts several operations, for example `allow(Read, Write) { user, book -> ... }`.
 - The build now uses Kotlin explicit API mode.
-- Added a new single-module Gradle build as part of the project reset.
-- Added the `io.liquidsoftware.acl` package namespace for the reset ACL core.
 
 ### Changed
 
-- Reset the project from the previous framework-heavy Maven multi-module layout to a single Gradle ACL core.
-- Replaced the previous `io.liquidsoftware.common.security.*` implementation with the `acl2` core model under `io.liquidsoftware.acl.*`.
-- Updated the README and project docs to match the new core-first library shape.
+- Rewrote `AGENTS.md`, the README and the docs for the single-module, single-package API. Publishing instructions now live only in `RELEASING.md`.
+- Set the in-development version to `0.4.0-SNAPSHOT`, since the unreleased changes are breaking.
 
 ### Fixed
 
@@ -34,6 +31,22 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - `AclCatalog` methods take `resource: Any` and a subject of the catalog's type instead of free type parameters. The runtime "Expected subject of type" check is gone because the compiler enforces it.
 - Removed the collection helpers `canAll`, `canReadAll`, `canWriteAll`, `canManageAll`, `filterBy`, `filterReadableBy`, `filterWritableBy`, `filterManageableBy`, `partitionBy`, `partitionReadableBy`, `partitionWritableBy`, `partitionManageableBy` and `decideAll`, along with `BatchAccessDecision`, `ItemAccessDecision` and `AccessPartition`. Use `forSubject` with `filter`, `partition`, `all` or `associateWith`.
 - `AclRule` is no longer public, and `AclPolicy.resourceType` is internal.
+
+## [0.3.0] - 2026-04-14
+
+### Added
+
+- Added a new single-module Gradle build as part of the project reset.
+- Added the `io.liquidsoftware.acl` package namespace for the reset ACL core.
+
+### Changed
+
+- Reset the project from the previous framework-heavy Maven multi-module layout to a single Gradle ACL core.
+- Replaced the previous `io.liquidsoftware.common.security.*` implementation with the `acl2` core model under `io.liquidsoftware.acl.*`.
+- Updated the README and project docs to match the new core-first library shape.
+
+### Breaking Changes
+
 - This is a full project reset, not a compatible evolution of the previous codebase.
 - Removed the old Maven `acl-*` modules and root `pom.xml`.
 - Renamed the public package namespace from `io.liquidsoftware.common.security.*` to `io.liquidsoftware.acl.*`.

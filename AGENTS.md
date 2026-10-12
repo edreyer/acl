@@ -1,156 +1,78 @@
 # AGENTS.md
 
-This document provides project-specific guidance for AI agents working on the standalone ACL project that will be extracted from this repository.
+Guidance for AI agents (and humans) working on this repository.
 
 ## Project Goal
 
-This project is a small OSS ACL library for Kotlin applications.
+`acl` is a small, framework-neutral Kotlin library that answers: can subject `A` perform operation `X` on resource `B`?
 
-Its job is to provide:
+It should stay small, generic, and easy to understand for users who were not involved in building it. Optimize for readable call sites and a small public surface.
 
-- a pure ACL core
-- an optional Arrow integration
-- an optional Spring Security integration
-- an optional Spring Security + Arrow bridge
+## Current Shape
 
-The library must remain generic, reusable, and easy to understand. It is not an application module and must not accumulate app-specific concepts from the source repository.
+- One Gradle module, one package: `io.liquidsoftware.acl`.
+- Kotlin explicit API mode is on; every public symbol is a deliberate choice.
+- Public API:
+  - `aclCatalog<S> { policy<R> { ... }; register(policy) }` returns `AclCatalog<S>`
+  - `AclCatalog<S>`: `decide`, `can`, `canRead`, `canWrite`, `canManage`, `forSubject`
+  - `SubjectAccess<S>`: the same checks with the subject bound
+  - `aclPolicy<S, R> { allow(op, ...) { ... } }` returns `AclPolicy<S, R>`
+  - `Operation` (`Read`, `Write`, `Manage`), `AccessDecision` (`Granted`, `Denied`), `DenialReason` (`NoMatchingAllowRule`, `NoPolicyRegistered`)
+- Internals: `AclRule`, `AclPolicyRegistry` (routes a resource to the policy for its most specific registered type and caches the result per class).
 
-## Architectural Rules
-
-### Module boundaries are strict
-
-Preserve these dependency rules:
-
-- `acl-core`
-  - pure Kotlin
-  - no Spring
-  - no Arrow
-- `acl-arrow`
-  - may depend on `acl-core`
-  - must not depend on Spring
-- `acl-spring-security`
-  - may depend on `acl-core`
-  - must not depend on Arrow
-- `acl-spring-security-arrow`
-  - may depend on `acl-core`
-  - may depend on `acl-arrow`
-  - may depend on `acl-spring-security`
-
-Do not collapse these modules for convenience.
+## Design Rules
 
 ### Keep the core generic
 
-Do not introduce or retain application-specific concepts such as:
+The library must not know about applications. Do not add:
 
-- `ExecutionContext`
-- `WorkflowError`
-- `UnauthorizedWorkflowError`
-- `UserDetailsWithId`
-- bounded-context names like `booking`, `payment`, `user`
-- Mongo persistence concerns
-- controller or HTTP response concepts
+- user, role, tenant or permission-storage concepts
+- persistence, HTTP, controller or workflow abstractions
+- framework dependencies (Spring, Ktor, Arrow, ...) in this module
 
-`acl-core` should expose generic authorization types only.
+Subjects, resources and their attributes are the caller's own types. Rules are plain predicates over them.
 
 ### Expected denial is data
 
-Permission denial is an expected outcome.
+A denied check returns `false` or `AccessDecision.Denied(reason)`. Do not use exceptions for normal denial.
 
-Prefer:
+Exceptions are only for programmer or configuration errors, such as registering two policies for one type or ambiguous routing.
 
-- `Boolean` in the pure core
-- typed authorization errors
-- `Raise` and `Either` in Arrow integration layers
+### Let the compiler do the work
 
-Do not use exceptions as the default mechanism for normal authorization denial.
+- The catalog is typed on its subject. Do not reintroduce untyped `<S : Any>` entry points or runtime subject-type checks.
+- Prefer sealed types and data classes for results and reasons.
+- Prefer one clear way to do something over several overloads.
 
-### Current-subject behavior is adapter logic
+### Prefer Kotlin's standard library over new helpers
 
-The core library must not know how to resolve the current subject.
+Collection workflows go through `forSubject` plus `filter`, `partition`, `all` and `associateWith`. Do not add `filterXBy`/`canXAll`-style helpers back to the catalog.
 
-That belongs in integration modules such as:
+### Keep the DSL restrained
 
-- Spring Security adapters
-- future Ktor adapters
+The DSL should read like the rule it expresses: `allow(Read, Write) { user, book -> user.id == book.userId }`. Avoid syntax that reads well in a demo but is hard to maintain or debug.
 
-## Kotlin Design Guidance
+## Framework Integrations
 
-- Prefer small, explicit public APIs.
-- Prefer data classes, enums, and sealed interfaces where they clarify the model.
-- Use Kotlin idioms, but avoid clever syntax that obscures meaning.
-- Keep the DSL useful and restrained.
-- Prefer names that read well in real application code.
+There are none in this repository today. If they come back (Arrow `Raise` helpers, Spring Security or Ktor current-subject adapters), add each as a separate Gradle module that depends on the core. The core must never depend on them, and integrations must not depend on each other unless one is explicitly a bridge between two.
 
-Examples:
-
-- `acl(resourceId) { manager(userId) }`
-- `checker.hasPermission(acl, subject, Permission.READ)`
-- `checker.ensureCanRead(subject, acl)`
-
-Avoid over-designed DSL syntax that reads well in demos but poorly in maintenance.
-
-## OSS Guidance
-
-Optimize for library users who were not involved in building it.
-
-That means:
-
-- package names must be generic and stable
-- artifact names must reflect clear module responsibilities
-- examples in docs must compile and reflect real APIs
-- public APIs should be intentionally curated
-- avoid exposing internal convenience APIs unless they add durable value
-
-When in doubt, prefer the smaller public surface.
+Resolving the "current subject" is always adapter logic, never core logic.
 
 ## Testing Expectations
 
-Every public behavior added to a module should have direct tests in that module.
+- Every public behavior has a direct test.
+- `ReadmeExamplesTest` mirrors the README examples. If you change an example in `README.md`, update that test in the same change.
+- Run `./gradlew test detekt` before pushing; CI runs the same.
 
-Minimum expectations:
+## Documentation
 
-- `acl-core`
-  - ACL evaluation tests
-  - builder DSL tests
-- `acl-arrow`
-  - `Raise` enforcement tests
-  - `SecuredResource` overload tests
-- `acl-spring-security`
-  - current-subject resolution tests
-  - boolean permission checks using resolved subject
-- `acl-spring-security-arrow`
-  - current-subject `Raise` enforcement tests
+- Keep `README.md` focused on users: install, quick start, rules, collections, type hierarchies, behavior.
+- Release mechanics live in `RELEASING.md`.
+- Record user-visible changes in `CHANGELOG.md` under `Unreleased`, with a `Breaking Changes` section when callers must change code.
+- Known limitations and ideas live in `docs/limitations-and-future-work.md`.
 
-If documentation examples are changed materially, add or update tests so those examples remain trustworthy.
+## When Extending the Library
 
-## Migration Constraints
-
-The new project will be created by extracting code from an application repository.
-
-Agents working in the new repo should:
-
-- remove app branding and app-local package names as needed
-- preserve the module split
-- remove any dependencies that only existed because of the source app
-- avoid reintroducing cross-module coupling
-- keep the new project ready to be consumed back by the source app as a dependency
-
-## Things To Avoid
-
-- Do not move Arrow into `acl-core`.
-- Do not move Spring Security into `acl-core`.
-- Do not make Spring users depend on Arrow.
-- Do not make Arrow users depend on Spring.
-- Do not add application workflow or HTTP abstractions to the library.
-- Do not reintroduce exception-driven ACL checks as the primary API.
-
-## Preferred Evolution Path
-
-When extending the library, prefer this order:
-
-1. improve `acl-core` if the concept is framework-neutral
-2. add Arrow ergonomics in `acl-arrow` if needed
-3. add framework adapters in dedicated modules
-4. add bridge modules only when two optional ecosystems need to work together
-
-This keeps the project modular and extraction-friendly.
+1. Ask whether the concept is framework-neutral and useful to most users. If not, it belongs in the caller's code or an integration module.
+2. Prefer extending existing types over adding new entry points.
+3. When in doubt, choose the smaller public surface.

@@ -177,22 +177,14 @@ Use an allow-only, default-deny policy engine with:
 
 - subject-only global rules for broad access like system admin
 - subject-and-resource rules for ownership and relationship checks
+- rules that can grant several operations at once
 - operation inheritance where `Manage` covers `Read` and `Write`
 - consumer-defined subject attributes and predicates, with no hardcoded admin concept in the engine
-- an application-facing authorization catalog that composes policies and offers collection-oriented helpers
+- a catalog typed on its subject, so subject mismatches are compile errors
 - resource routing by runtime type, using the policy registered for the most specific supertype
-- fail-fast validation for subject type mismatches
-- internal type metadata captured at policy registration time to reduce unsafe casts
 
 This keeps the library small while still supporting the common ACL cases we care about first.
 
-The catalog should be the primary ergonomic entry point for application code. In addition to single-entity checks, it may expose helpers for collection workflows such as:
+The catalog is the primary entry point for application code. For collection workflows it offers a subject-bound view (`forSubject`) whose checks compose with Kotlin's standard collection functions (`filter`, `partition`, `all`, `associateWith`), rather than dedicated collection helpers.
 
-- checking whether all entities in a collection are readable
-- checking whether all entities in a collection are writable
-- checking whether all entities in a collection are manageable
-- filtering to only the entities a subject can access
-- partitioning collections into allowed and denied items
-- evaluating a batch of decisions in one call
-
-The low-level policy model should remain small and generic; collection helpers belong on the catalog, not on the evaluator.
+The low-level policy model should remain small and generic.
