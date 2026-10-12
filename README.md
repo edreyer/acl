@@ -9,7 +9,7 @@ The library is intentionally small:
 - pure ACL core
 - allow-only rules
 - `Manage` implies `Read` and `Write`
-- exact-match resource routing
+- type-aware resource routing (subtypes use the most specific registered policy)
 - collection helpers for batch checks and filtering
 
 ## Installation
@@ -135,7 +135,9 @@ catalog.decideAll(bob, Operation.Read, books)
 
 The stable behavior is covered by tests and includes:
 
-- exact-match resource routing
+- resources route to the policy for their most specific registered supertype
+- subjects may be any subtype of the policy's subject type, including sealed hierarchies
+- ambiguous routing (two unrelated matching supertypes) fails fast
 - duplicate registration rejection
 - fail-fast validation for wrong subject type
 - `Manage` implies `Read` and `Write`

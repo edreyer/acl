@@ -12,27 +12,11 @@ This document captures the current weaknesses of the implementation and concrete
 
 ## Current limitations
 
-### 1. Resource routing is exact-match only
+### 1. Ambiguous resource routing fails at check time
 
-The catalog currently resolves policies by the exact runtime class of the resource.
+Resources are routed to the policy registered for their most specific supertype, so subclasses, ORM proxies, and sealed hierarchies resolve to the expected policy.
 
-Implications:
-
-- sealed resource hierarchies are not handled automatically
-- subclasses and proxy types may not resolve to the expected policy
-- resource polymorphism is limited
-
-When this is acceptable:
-
-- each concrete resource type is its own policy boundary
-- `Book` and `Invoice` each have distinct access rules
-- the app prefers explicit, type-local policies over inheritance-based routing
-
-When this is not acceptable:
-
-- a subtype should inherit a parent policy
-- ORM proxies should behave like the entity type they wrap
-- a sealed hierarchy should share one policy family
+If a resource matches two registered types where neither is a subtype of the other (for example, two interfaces it implements), the check throws `IllegalStateException`. Because the catalog cannot know every runtime type up front, this is detected on the first check for that type rather than when the catalog is built.
 
 ### 2. Policy lookup still has one narrow unchecked cast boundary
 
@@ -82,17 +66,6 @@ Implications:
 - but some real systems need explicit deny and precedence rules
 
 ## Future improvement ideas
-
-### Resource hierarchy-aware lookup
-
-Add policy resolution that can consider:
-
-- exact type
-- supertypes
-- interfaces
-- most-specific match
-
-This would make ADT-like resource hierarchies work more naturally.
 
 ### Strongly typed catalog registration
 
@@ -167,8 +140,7 @@ This would make the API easier to learn and harder to misuse.
 
 If we continue after v1, the most valuable improvements are probably:
 
-1. resource hierarchy-aware policy lookup
-2. structured denial reasons
-3. more expressive DSL helpers
+1. structured denial reasons
+2. more expressive DSL helpers
 
 Those give the best balance of usability and safety without complicating the first release too much.
