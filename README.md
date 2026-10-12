@@ -7,7 +7,7 @@
 - pure Kotlin, no framework dependencies
 - one policy per resource type, written as a small DSL over your own domain types
 - allow-only rules with default deny
-- built-in `Read`, `Write` and `Manage` operations, plus your own; `Manage` implies all of them
+- built-in `Read`, `Write` and `Manage` operations, plus your own; `Manage` implies `Read` and `Write`
 - denials are values with a reason, not exceptions
 
 ## Installation
@@ -68,7 +68,7 @@ policy<Book> {
 }
 ```
 
-Any matching rule grants access. If no rule matches, the decision is `Denied(NoMatchingAllowRule)`. A rule for `Manage` also grants `Read`, `Write` and any custom operation.
+Any matching rule grants access. If no rule matches, the decision is `Denied(NoMatchingAllowRule)`. A rule for `Manage` also grants `Read` and `Write`.
 
 Policies can be declared inline with `policy<R> { ... }` or built separately with `aclPolicy<User, Book> { ... }` and added with `register(policy)`, which is useful when a policy lives next to the resource it protects.
 
@@ -89,17 +89,26 @@ val acl = aclCatalog<User> {
     }
 }
 
-acl.can(bob, Approve, invoice)
-acl.forSubject(bob).can(Share, invoice)
+acl.can(bob, Approve, invoice)            // true
+acl.can(admin, Approve, invoice)          // false, Manage does not cover custom operations
+acl.forSubject(bob).can(Share, invoice)   // false, no rule for Share
 ```
 
-A custom operation covers only itself, and `Manage` covers every operation. To make one operation grant others, override `covers`:
+A custom operation is granted only by rules that name it, so adding one never widens what `Manage` grants. That keeps separation-of-duties rules like "admins can't approve invoices" intact. If a role should get both, name both:
+
+```kotlin
+allow(Manage, Approve) { user -> user.isSystemAdmin }
+```
+
+A custom operation covers only itself. To make one operation grant others, override `covers`:
 
 ```kotlin
 data object Edit : Operation {
     override fun covers(requested: Operation) = requested == Edit || requested == Read || requested == Write
 }
 ```
+
+Operations are compared with `==`, so declare them as objects or data classes. An instance of a plain class only equals itself, so a check with a new instance is denied.
 
 ## Checking Many Resources
 
@@ -153,7 +162,7 @@ The following behavior is covered by tests:
 - resources route to the policy for their most specific registered type
 - ambiguous routing fails fast; duplicate registration for one type is rejected
 - one `allow` rule can grant several operations
-- `Manage` implies every operation, including custom ones; other operations imply only themselves unless they override `covers`
+- `Manage` implies `Read` and `Write` but not custom operations; other operations imply only themselves unless they override `covers`
 - empty policies deny all access; resources with no policy are denied
 - denied decisions carry a structured reason with a human-readable message
 

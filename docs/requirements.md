@@ -94,7 +94,7 @@ Operation semantics:
 - `Manage` is the highest privilege.
 - `Manage` implies `Read`.
 - `Manage` implies `Write`.
-- `Manage` implies every custom operation.
+- `Manage` does not imply custom operations; a custom operation is granted only by rules that name it.
 - `Read` and `Write` remain independent of each other.
 - Applications can declare their own operations. A custom operation implies only itself unless it says otherwise.
 
@@ -180,7 +180,7 @@ Use an allow-only, default-deny policy engine with:
 - subject-only global rules for broad access like system admin
 - subject-and-resource rules for ownership and relationship checks
 - rules that can grant several operations at once
-- operation inheritance where `Manage` covers `Read`, `Write` and any custom operation
+- operation inheritance where `Manage` covers `Read` and `Write`
 - an open set of operations, so applications can declare their own (`Approve`, `Share`)
 - consumer-defined subject attributes and predicates, with no hardcoded admin concept in the engine
 - a catalog typed on its subject, so subject mismatches are compile errors

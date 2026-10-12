@@ -75,7 +75,8 @@ class ReadmeExamplesTest {
 
         assertTrue(acl.can(bob, Approve, invoice))
         assertFalse(acl.forSubject(bob).can(Share, invoice))
-        assertTrue(acl.forSubject(admin).can(Share, invoice))
+        assertFalse(acl.can(admin, Approve, invoice))
+        assertFalse(acl.forSubject(admin).can(Share, invoice))
         assertTrue(Edit.covers(Read))
         assertTrue(Edit.covers(Write))
         assertFalse(Edit.covers(Manage))

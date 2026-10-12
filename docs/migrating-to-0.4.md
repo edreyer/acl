@@ -171,7 +171,7 @@ fun operationNamed(name: String): Operation = when (name) {
 }
 ```
 
-`Manage` covers every operation, including custom ones. A custom operation covers only itself unless it overrides `covers`.
+`Manage` covers only `Read`, `Write` and itself, so a custom operation is granted only by rules that name it. To give admins `Approve` as well, write `allow(Manage, Approve) { ... }`. A custom operation covers only itself unless it overrides `covers`.
 
 ## Behavior changes to review
 
