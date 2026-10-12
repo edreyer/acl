@@ -83,6 +83,10 @@ publishing {
 }
 
 signing {
+  // Signing is only required for Maven Central, so publishToMavenLocal works without a GPG key.
+  setRequired {
+    gradle.taskGraph.allTasks.any { it.name.contains("CentralPortal") || it.name.contains("Nmcp") }
+  }
   sign(publishing.publications["mavenJava"])
 }
 
