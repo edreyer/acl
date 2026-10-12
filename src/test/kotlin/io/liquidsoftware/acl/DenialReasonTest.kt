@@ -1,8 +1,5 @@
 package io.liquidsoftware.acl
 
-import io.liquidsoftware.acl.decision.AccessDecision
-import io.liquidsoftware.acl.decision.NoMatchingAllowRule
-import io.liquidsoftware.acl.decision.NoPolicyRegistered
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

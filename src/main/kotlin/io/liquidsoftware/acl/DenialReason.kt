@@ -1,18 +1,18 @@
-package io.liquidsoftware.acl.decision
+package io.liquidsoftware.acl
 
 import kotlin.reflect.KClass
 
-sealed interface DenialReason {
-    val message: String
+public sealed interface DenialReason {
+    public val message: String
 }
 
-data object NoMatchingAllowRule : DenialReason {
+public data object NoMatchingAllowRule : DenialReason {
     override val message: String = "No matching allow rule"
 
     override fun toString(): String = message
 }
 
-data class NoPolicyRegistered(
+public data class NoPolicyRegistered(
     val resourceType: KClass<*>,
 ) : DenialReason {
     override val message: String = "No policy registered for ${resourceType.qualifiedName ?: resourceType.simpleName ?: "unknown"}"

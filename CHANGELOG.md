@@ -6,14 +6,12 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
-### Fixed
-
-- Subjects that are subtypes of a policy's subject type (for example, members of a sealed hierarchy) are now accepted instead of failing with `IllegalArgumentException`.
-- Resources whose runtime type is a subtype of a registered resource type (subclasses, interface implementations, ORM proxies) now route to the most specific matching policy instead of being denied with `NoPolicyRegistered`.
-- A resource that matches two unrelated registered types now fails fast with a clear `IllegalStateException`.
-
 ### Added
 
+- `aclCatalog<S> { ... }` returns an `AclCatalog<S>`, so passing the wrong subject type is a compile error.
+- `AclCatalog.forSubject(subject)` returns a `SubjectAccess<S>` whose `canRead`/`canWrite`/`canManage`/`can`/`decide` compose with Kotlin collection functions, for example `books.filter(access::canRead)`.
+- `allow(...)` accepts several operations, for example `allow(Read, Write) { user, book -> ... }`.
+- The build now uses Kotlin explicit API mode.
 - Added a new single-module Gradle build as part of the project reset.
 - Added the `io.liquidsoftware.acl` package namespace for the reset ACL core.
 
@@ -23,8 +21,19 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - Replaced the previous `io.liquidsoftware.common.security.*` implementation with the `acl2` core model under `io.liquidsoftware.acl.*`.
 - Updated the README and project docs to match the new core-first library shape.
 
+### Fixed
+
+- Subjects that are subtypes of a policy's subject type (for example, members of a sealed hierarchy) are now accepted instead of failing with `IllegalArgumentException`.
+- Resources whose runtime type is a subtype of a registered resource type (subclasses, interface implementations, ORM proxies) now route to the most specific matching policy instead of being denied with `NoPolicyRegistered`.
+- A resource that matches two unrelated registered types now fails fast with a clear `IllegalStateException`.
+
 ### Breaking Changes
 
+- All public types moved to the single package `io.liquidsoftware.acl`. The `catalog`, `decision` and `policy` subpackages are gone.
+- `aclCatalog { policy<User, Book> { ... } }` is now `aclCatalog<User> { policy<Book> { ... } }`.
+- `AclCatalog` methods take `resource: Any` and a subject of the catalog's type instead of free type parameters. The runtime "Expected subject of type" check is gone because the compiler enforces it.
+- Removed the collection helpers `canAll`, `canReadAll`, `canWriteAll`, `canManageAll`, `filterBy`, `filterReadableBy`, `filterWritableBy`, `filterManageableBy`, `partitionBy`, `partitionReadableBy`, `partitionWritableBy`, `partitionManageableBy` and `decideAll`, along with `BatchAccessDecision`, `ItemAccessDecision` and `AccessPartition`. Use `forSubject` with `filter`, `partition`, `all` or `associateWith`.
+- `AclRule` is no longer public, and `AclPolicy.resourceType` is internal.
 - This is a full project reset, not a compatible evolution of the previous codebase.
 - Removed the old Maven `acl-*` modules and root `pom.xml`.
 - Renamed the public package namespace from `io.liquidsoftware.common.security.*` to `io.liquidsoftware.acl.*`.
