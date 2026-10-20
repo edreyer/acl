@@ -29,6 +29,7 @@ public final class io/liquidsoftware/acl/AclCatalog {
 	public final fun canWrite (Ljava/lang/Object;Ljava/lang/Object;)Z
 	public final fun decide (Ljava/lang/Object;Lio/liquidsoftware/acl/Operation;Ljava/lang/Object;)Lio/liquidsoftware/acl/AccessDecision;
 	public final fun forSubject (Ljava/lang/Object;)Lio/liquidsoftware/acl/SubjectAccess;
+	public final fun hasPolicyFor (Lkotlin/reflect/KClass;)Z
 }
 
 public final class io/liquidsoftware/acl/AclCatalogBuilder {

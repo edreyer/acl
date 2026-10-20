@@ -1,5 +1,7 @@
 package io.liquidsoftware.acl
 
+import kotlin.reflect.KClass
+
 /**
  * Answers whether a subject of type [S] may perform an operation on a resource.
  *
@@ -28,6 +30,13 @@ public class AclCatalog<S : Any> internal constructor(
 
     /** Whether [subject] may [Operation.Manage] [resource]. */
     public fun canManage(subject: S, resource: Any): Boolean = can(subject, Operation.Manage, resource)
+
+    /**
+     * Whether resources of [resourceType] route to exactly one policy, its own or a supertype's. False when no
+     * policy matches or the match is ambiguous. Meant for asserting a catalog's wiring in tests:
+     * `assertTrue(acl.hasPolicyFor(Book::class))`.
+     */
+    public fun hasPolicyFor(resourceType: KClass<*>): Boolean = registry.hasPolicyFor(resourceType)
 
     /**
      * Binds [subject] so repeated checks don't have to pass it. The checks are plain functions, so they

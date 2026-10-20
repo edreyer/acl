@@ -133,6 +133,25 @@ class AclTypeHierarchyTest {
     }
 
     @Test
+    fun has_policy_for_follows_routing() {
+        assertTrue(catalog.hasPolicyFor(Document::class))
+        assertTrue(catalog.hasPolicyFor(Contract::class))
+        assertTrue(catalog.hasPolicyFor(SecretDocument::class))
+        assertFalse(catalog.hasPolicyFor(String::class))
+
+        val ambiguousCatalog = aclCatalog<Principal> {
+            policy<Shareable> {
+                allow(Operation.Read) { _ -> true }
+            }
+            policy<Archivable> {
+                allow(Operation.Read) { _ -> true }
+            }
+        }
+        assertTrue(ambiguousCatalog.hasPolicyFor(Shareable::class))
+        assertFalse(ambiguousCatalog.hasPolicyFor(Report::class))
+    }
+
+    @Test
     fun ambiguity_is_resolved_by_a_policy_for_the_concrete_type() {
         val resolvedCatalog = aclCatalog<Principal> {
             policy<Shareable> {

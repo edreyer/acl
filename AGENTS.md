@@ -16,7 +16,7 @@ It should stay small, generic, and easy to understand for users who were not inv
 - Every public class and function has KDoc (detekt's `UndocumentedPublicClass`/`UndocumentedPublicFunction` enforce it), since the Dokka output is published.
 - Public API:
   - `aclCatalog<S> { policy<R> { ... }; register(policy) }` returns `AclCatalog<S>`
-  - `AclCatalog<S>`: `decide`, `can`, `canRead`, `canWrite`, `canManage`, `forSubject`
+  - `AclCatalog<S>`: `decide`, `can`, `canRead`, `canWrite`, `canManage`, `forSubject`, `hasPolicyFor`
   - `SubjectAccess<S>`: the same checks with the subject bound
   - `aclPolicy<S, R> { allow(op, ...) { ... } }` returns `AclPolicy<S, R>`
   - `Operation`: an open interface with built-in `Read`, `Write` and `Manage` (which covers `Read` and `Write`, never custom operations); users declare their own as objects

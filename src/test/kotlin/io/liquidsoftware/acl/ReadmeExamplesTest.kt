@@ -106,6 +106,7 @@ class ReadmeExamplesTest {
         }
 
         assertTrue(acl.canRead(Member("bob"), Contract("bob")))
+        assertTrue(acl.hasPolicyFor(Contract::class))
         assertFalse(acl.canRead(Member("bob"), SecretDocument("bob")))
         assertTrue(acl.canRead(Admin("root"), SecretDocument("bob")))
     }

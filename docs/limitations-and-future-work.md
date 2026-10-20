@@ -4,12 +4,6 @@ Known limitations of the current design, and ideas for addressing them. Nothing 
 
 ## Current limitations
 
-### A missing policy looks like a normal denial
-
-A resource with no registered policy is denied with `NoPolicyRegistered`. Through the boolean `can*` checks this is indistinguishable from an ordinary denial, even though it is usually a wiring mistake.
-
-Ideas: a `hasPolicyFor(resource)` check that callers can assert in tests, or a catalog option that reports missing policies.
-
 ### Ambiguous routing is detected on first use
 
 Resources route to the policy for their most specific registered type. If a resource matches two registered types and neither is a subtype of the other, the check is denied with `AmbiguousPolicy`. Because the catalog cannot know every runtime type up front, this is found on the first check for that type, not when the catalog is built. Through the boolean `can*` checks it looks like an ordinary denial.
