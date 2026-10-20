@@ -50,7 +50,7 @@ If your key is protected by a passphrase, make sure the signing password is conf
 4. Run a full local verification build:
 
 ```bash
-./gradlew clean test detekt
+./gradlew clean build publishToMavenLocal
 ```
 
 5. Create the release tag that matches the POM SCM metadata:
@@ -63,10 +63,18 @@ git push origin vX.Y.Z
 6. Publish the release bundle to Central:
 
 ```bash
-./gradlew publishAllPublicationsToCentralPortal
+./gradlew publishAggregationToCentralPortal
 ```
 
-The current configuration uses the Central Portal plugin with automatic publication enabled. If the upload validates successfully, Sonatype will complete the release flow automatically.
+The nmcp settings plugin (configured in `settings.gradle.kts`) uploads one deployment containing every publication. Publication is automatic by default: if the upload validates, Sonatype releases it.
+
+To upload and validate without releasing, for example to try a tooling change, pass `USER_MANAGED`, then release or drop the deployment at `https://central.sonatype.com/publishing/deployments`:
+
+```bash
+./gradlew publishAggregationToCentralPortal -PcentralPortalPublishingType=USER_MANAGED
+```
+
+To inspect the signed bundle without uploading anything, run `./gradlew nmcpZipAggregation` and look at `build/nmcp/zip/aggregation.zip`.
 
 ## What Gets Published
 
