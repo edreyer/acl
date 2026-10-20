@@ -24,6 +24,12 @@ dependencies {
 kotlin {
   jvmToolchain(21)
   explicitApi()
+
+  // Fails the build when the public API changes without an updated api/ dump.
+  @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+  abiValidation {
+    enabled.set(true)
+  }
 }
 
 java {
@@ -35,6 +41,10 @@ tasks.register<Jar>("javadocJar") {
   dependsOn(dokkaJavadoc)
   archiveClassifier.set("javadoc")
   from(dokkaJavadoc.map { it.outputs.files })
+}
+
+tasks.check {
+  dependsOn("checkLegacyAbi")
 }
 
 tasks.test {
