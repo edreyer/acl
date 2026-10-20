@@ -4,12 +4,6 @@ Known limitations of the current design, and ideas for addressing them. Nothing 
 
 ## Current limitations
 
-### Denial reasons are minimal
-
-`NoMatchingAllowRule` carries no data, so its message is always "No matching allow rule". That is thin for logs and audits.
-
-Idea: include the requested operation and the resource type, for example "No rule allows Read on Book".
-
 ### Ambiguous routing is detected on first use
 
 Resources route to the policy for their most specific registered type. If a resource matches two registered types and neither is a subtype of the other, the check is denied with `AmbiguousPolicy`. Because the catalog cannot know every runtime type up front, this is found on the first check for that type, not when the catalog is built. Through the boolean `can*` checks it looks like an ordinary denial.

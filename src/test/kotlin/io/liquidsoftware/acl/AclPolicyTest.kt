@@ -26,11 +26,11 @@ class AclPolicyTest {
         val book = Book(userId = "alice")
 
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Read, Book::class)),
             policy.decide(bob, Operation.Read, book),
         )
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Write, Book::class)),
             policy.decide(bob, Operation.Write, book),
         )
     }
@@ -51,7 +51,7 @@ class AclPolicyTest {
         val book = Book(userId = "alice")
 
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Manage, Book::class)),
             policy.decide(bob, Operation.Manage, book),
         )
     }
@@ -63,15 +63,15 @@ class AclPolicyTest {
         val book = Book(userId = "bob")
 
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Read, Book::class)),
             emptyPolicy.decide(bob, Operation.Read, book),
         )
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Write, Book::class)),
             emptyPolicy.decide(bob, Operation.Write, book),
         )
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Manage, Book::class)),
             emptyPolicy.decide(bob, Operation.Manage, book),
         )
     }
@@ -86,11 +86,11 @@ class AclPolicyTest {
 
         assertTrue(readOnlyPolicy.decide(bob, Operation.Read, book).granted)
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Write, Book::class)),
             readOnlyPolicy.decide(bob, Operation.Write, book),
         )
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Manage, Book::class)),
             readOnlyPolicy.decide(bob, Operation.Manage, book),
         )
     }
@@ -104,12 +104,12 @@ class AclPolicyTest {
         val book = Book(userId = "bob")
 
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Read, Book::class)),
             writeOnlyPolicy.decide(bob, Operation.Read, book),
         )
         assertTrue(writeOnlyPolicy.decide(bob, Operation.Write, book).granted)
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Manage, Book::class)),
             writeOnlyPolicy.decide(bob, Operation.Manage, book),
         )
     }
@@ -138,7 +138,7 @@ class AclPolicyTest {
         assertTrue(ownerPolicy.decide(bob, Operation.Read, book).granted)
         assertTrue(ownerPolicy.decide(bob, Operation.Write, book).granted)
         assertEquals(
-            AccessDecision.Denied(NoMatchingAllowRule),
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Manage, Book::class)),
             ownerPolicy.decide(bob, Operation.Manage, book),
         )
     }

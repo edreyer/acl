@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- `NoMatchingAllowRule` is now a data class carrying the requested `operation` and the resource's `resourceType`, and its message names both, for example "No rule allows Read on com.example.Book". Replace `Denied(NoMatchingAllowRule)` comparisons with `reason is NoMatchingAllowRule`, or construct it with the operation and type.
+
 ### Added
 
 - `AclCatalog.hasPolicyFor(resourceType)` reports whether a resource type routes to exactly one policy, so tests can catch a missing or ambiguous policy that `can*` would report as an ordinary denial.

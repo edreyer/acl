@@ -33,7 +33,7 @@ class ReadmeExamplesTest {
             AccessDecision.Granted -> "granted"
             is AccessDecision.Denied -> decision.reason.message
         }
-        assertEquals("No matching allow rule", message)
+        assertEquals("No rule allows Read on io.liquidsoftware.acl.Book", message)
     }
 
     @Test
@@ -48,7 +48,7 @@ class ReadmeExamplesTest {
         assertEquals(listOf(Book(userId = "alice")), readOnly)
         assertFalse(books.all(access::canManage))
         assertEquals(
-            mapOf(book to AccessDecision.Granted, Book(userId = "alice") to AccessDecision.Denied(NoMatchingAllowRule)),
+            mapOf(book to AccessDecision.Granted, Book(userId = "alice") to AccessDecision.Denied(NoMatchingAllowRule(Read, Book::class))),
             books.associateWith { access.decide(Read, it) },
         )
     }

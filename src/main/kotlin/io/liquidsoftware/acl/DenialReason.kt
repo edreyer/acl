@@ -8,9 +8,15 @@ public sealed interface DenialReason {
     public val message: String
 }
 
-/** The resource's policy has no rule that allows the operation for this subject and resource. */
-public data object NoMatchingAllowRule : DenialReason {
-    override val message: String = "No matching allow rule"
+/**
+ * The resource's policy has no rule that allows [operation] for this subject and resource. [resourceType] is the
+ * resource's runtime class, which may be a subtype of the type the policy was registered for.
+ */
+public data class NoMatchingAllowRule(
+    val operation: Operation,
+    val resourceType: KClass<*>,
+) : DenialReason {
+    override val message: String = "No rule allows $operation on ${resourceType.displayName()}"
 
     override fun toString(): String = message
 }
