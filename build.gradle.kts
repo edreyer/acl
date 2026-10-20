@@ -32,6 +32,12 @@ kotlin {
     jvmTarget.set(JvmTarget.fromTarget(minimumJdk.toString()))
     freeCompilerArgs.add("-Xjdk-release=$minimumJdk")
   }
+
+  // Fails the build when the public API changes without an updated api/ dump.
+  @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+  abiValidation {
+    enabled.set(true)
+  }
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -45,6 +51,10 @@ java {
 tasks.register<Jar>("javadocJar") {
   archiveClassifier.set("javadoc")
   from(tasks.named("dokkaGeneratePublicationJavadoc"))
+}
+
+tasks.check {
+  dependsOn("checkLegacyAbi")
 }
 
 tasks.withType<Test>().configureEach {

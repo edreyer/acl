@@ -43,6 +43,9 @@ jobs:
       - name: Check javadoc jar is not empty
         run: unzip -l build/libs/acl-*-javadoc.jar | grep -q 'index.html'
 
+      - name: Public API unchanged (api/acl.api)
+        run: ./gradlew checkLegacyAbi
+
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
