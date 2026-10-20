@@ -14,7 +14,7 @@
 
 ```kotlin
 dependencies {
-    implementation("io.liquidsoftware:acl:0.4.1")
+    implementation("io.liquidsoftware:acl:0.5.0")
 }
 ```
 
@@ -24,13 +24,13 @@ Maven:
 <dependency>
     <groupId>io.liquidsoftware</groupId>
     <artifactId>acl</artifactId>
-    <version>0.4.1</version>
+    <version>0.5.0</version>
 </dependency>
 ```
 
 Requires JDK 17 or newer. (0.4.0 required JDK 21; use 0.4.1 or later on JDK 17.)
 
-**Upgrading from 0.3?** Follow the [migration guide](docs/migrating-to-0.4.md).
+**Upgrading from 0.3 or 0.4?** Follow the [migration guide](docs/migrating-to-0.5.md).
 
 ## Quick Start
 
@@ -203,7 +203,7 @@ includeBuild("../acl")
 
 ## More
 
-- [docs/migrating-to-0.4.md](docs/migrating-to-0.4.md) explains how to upgrade from 0.3.
+- [docs/migrating-to-0.5.md](docs/migrating-to-0.5.md) explains how to upgrade from 0.3 or 0.4.
 - [CHANGELOG.md](CHANGELOG.md) lists changes by release.
 - [RELEASING.md](RELEASING.md) covers publishing to Maven Central.
 - [docs/limitations-and-future-work.md](docs/limitations-and-future-work.md) tracks known limitations and ideas.
