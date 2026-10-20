@@ -4,12 +4,6 @@ Known limitations of the current design, and ideas for addressing them. Nothing 
 
 ## Current limitations
 
-### Denial reasons are minimal
-
-`NoMatchingAllowRule` carries no data, so its message is always "No matching allow rule". That is thin for logs and audits.
-
-Idea: include the requested operation and the resource type, for example "No rule allows Read on Book".
-
 ### A missing policy looks like a normal denial
 
 A resource with no registered policy is denied with `NoPolicyRegistered`. Through the boolean `can*` checks this is indistinguishable from an ordinary denial, even though it is usually a wiring mistake.

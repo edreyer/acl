@@ -38,7 +38,7 @@ class CustomOperationTest {
 
     @Test
     fun custom_operation_without_a_rule_is_denied() {
-        assertEquals(AccessDecision.Denied(NoMatchingAllowRule), acl.decide(bob, Share, invoice))
+        assertEquals(AccessDecision.Denied(NoMatchingAllowRule(Share, Invoice::class)), acl.decide(bob, Share, invoice))
     }
 
     @Test

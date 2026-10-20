@@ -7,8 +7,8 @@ class DenialReasonTest {
     @Test
     fun denial_reasons_render_human_readable_messages() {
         assertEquals(
-            "No matching allow rule",
-            NoMatchingAllowRule.toString(),
+            "No rule allows Read on kotlin.String",
+            NoMatchingAllowRule(Operation.Read, String::class).toString(),
         )
 
         assertEquals(
@@ -23,8 +23,8 @@ class DenialReasonTest {
         )
 
         assertEquals(
-            "Denied(reason=No matching allow rule)",
-            AccessDecision.Denied(NoMatchingAllowRule).toString(),
+            "Denied(reason=No rule allows Write on kotlin.String)",
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Write, String::class)).toString(),
         )
     }
 }

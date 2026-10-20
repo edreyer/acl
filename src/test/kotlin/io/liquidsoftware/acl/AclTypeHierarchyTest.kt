@@ -84,6 +84,14 @@ class AclTypeHierarchyTest {
     }
 
     @Test
+    fun denial_names_the_resource_runtime_type_not_the_policy_type() {
+        assertEquals(
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Read, Contract::class)),
+            catalog.decide(Member("bob"), Operation.Read, Contract("alice")),
+        )
+    }
+
+    @Test
     fun ambiguous_policies_deny_with_a_reason() {
         val ambiguousCatalog = aclCatalog<Principal> {
             policy<Shareable> {

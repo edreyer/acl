@@ -18,10 +18,10 @@ public class AclPolicy<in S : Any, R : Any> internal constructor(
 ) {
     /**
      * Grants [operation] when any rule for an operation that covers it matches [subject] and [resource], otherwise
-     * denies with [NoMatchingAllowRule]. Exceptions thrown by rules propagate to the caller.
+     * denies with [NoMatchingAllowRule] naming [operation] and the resource's class. Exceptions thrown by rules propagate to the caller.
      */
     public fun decide(subject: S, operation: Operation, resource: R): AccessDecision =
-        if (rules.any { it.matches(subject, operation, resource) }) Granted else Denied(NoMatchingAllowRule)
+        if (rules.any { it.matches(subject, operation, resource) }) Granted else Denied(NoMatchingAllowRule(operation, resource::class))
 }
 
 /** Collects the `allow` rules of one policy. Rules only allow; anything no rule allows is denied. */

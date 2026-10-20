@@ -61,7 +61,7 @@ acl.canManage(admin, book)  // true
 
 when (val decision = acl.decide(bob, Read, Book(userId = "alice"))) {
     AccessDecision.Granted -> println("granted")
-    is AccessDecision.Denied -> println(decision.reason.message)  // "No matching allow rule"
+    is AccessDecision.Denied -> println(decision.reason.message)  // "No rule allows Read on com.example.Book"
 }
 ```
 
@@ -78,7 +78,7 @@ policy<Book> {
 }
 ```
 
-Any matching rule grants access. If no rule matches, the decision is `Denied(NoMatchingAllowRule)`. A rule for `Manage` also grants `Read` and `Write`.
+Any matching rule grants access. If no rule matches, the decision is `Denied(NoMatchingAllowRule(operation, resourceType))`. A rule for `Manage` also grants `Read` and `Write`.
 
 Policies can be declared inline with `policy<R> { ... }` or built separately with `aclPolicy<User, Book> { ... }` and added with `register(policy)`, which is useful when a policy lives next to the resource it protects.
 
