@@ -6,6 +6,11 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+### Fixed
+
+- The library runs on JDK 17. 0.4.0 was compiled for JDK 21, so projects on JDK 17 could not resolve or load it.
+- The published javadoc jar contains the generated documentation. In 0.4.0 it was empty.
+
 ## [0.4.0] - 2026-10-12
 
 ### Added

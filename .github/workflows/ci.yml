@@ -23,15 +23,25 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          # 17 runs the tests on the oldest supported JDK; 21 (listed last) builds.
+          java-version: |
+            17
+            21
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Test
-        run: ./gradlew test
+      - name: Build, test and lint
+        run: ./gradlew build
 
-      - name: Lint (detekt)
-        run: ./gradlew detekt
+      - name: Test on JDK 17
+        run: ./gradlew testMinimumJdk -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64
+
+      # Builds the artifacts exactly as they are published (unsigned), so packaging breaks here, not at release time.
+      - name: Package
+        run: ./gradlew publishToMavenLocal
+
+      - name: Check javadoc jar is not empty
+        run: unzip -l build/libs/acl-*-javadoc.jar | grep -q 'index.html'
 
       - name: Upload test reports
         if: failure()

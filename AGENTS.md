@@ -11,6 +11,7 @@ It should stay small, generic, and easy to understand for users who were not inv
 ## Current Shape
 
 - One Gradle module, one package: `io.liquidsoftware.acl`.
+- Builds with JDK 21 but targets JDK 17 (bytecode, JDK APIs and Gradle metadata). `testMinimumJdk` runs the tests on 17.
 - Kotlin explicit API mode is on; every public symbol is a deliberate choice.
 - Public API:
   - `aclCatalog<S> { policy<R> { ... }; register(policy) }` returns `AclCatalog<S>`
