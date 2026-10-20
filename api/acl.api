@@ -1,0 +1,134 @@
+public abstract interface class io/liquidsoftware/acl/AccessDecision {
+	public abstract fun getGranted ()Z
+}
+
+public final class io/liquidsoftware/acl/AccessDecision$Denied : io/liquidsoftware/acl/AccessDecision {
+	public fun <init> (Lio/liquidsoftware/acl/DenialReason;)V
+	public final fun component1 ()Lio/liquidsoftware/acl/DenialReason;
+	public final fun copy (Lio/liquidsoftware/acl/DenialReason;)Lio/liquidsoftware/acl/AccessDecision$Denied;
+	public static synthetic fun copy$default (Lio/liquidsoftware/acl/AccessDecision$Denied;Lio/liquidsoftware/acl/DenialReason;ILjava/lang/Object;)Lio/liquidsoftware/acl/AccessDecision$Denied;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getGranted ()Z
+	public final fun getReason ()Lio/liquidsoftware/acl/DenialReason;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/liquidsoftware/acl/AccessDecision$Granted : io/liquidsoftware/acl/AccessDecision {
+	public static final field INSTANCE Lio/liquidsoftware/acl/AccessDecision$Granted;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getGranted ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/liquidsoftware/acl/AclCatalog {
+	public final fun can (Ljava/lang/Object;Lio/liquidsoftware/acl/Operation;Ljava/lang/Object;)Z
+	public final fun canManage (Ljava/lang/Object;Ljava/lang/Object;)Z
+	public final fun canRead (Ljava/lang/Object;Ljava/lang/Object;)Z
+	public final fun canWrite (Ljava/lang/Object;Ljava/lang/Object;)Z
+	public final fun decide (Ljava/lang/Object;Lio/liquidsoftware/acl/Operation;Ljava/lang/Object;)Lio/liquidsoftware/acl/AccessDecision;
+	public final fun forSubject (Ljava/lang/Object;)Lio/liquidsoftware/acl/SubjectAccess;
+}
+
+public final class io/liquidsoftware/acl/AclCatalogBuilder {
+	public final fun register (Lio/liquidsoftware/acl/AclPolicy;)V
+}
+
+public final class io/liquidsoftware/acl/AclCatalogKt {
+	public static final fun aclCatalog (Lkotlin/jvm/functions/Function1;)Lio/liquidsoftware/acl/AclCatalog;
+}
+
+public abstract interface annotation class io/liquidsoftware/acl/AclDsl : java/lang/annotation/Annotation {
+}
+
+public final class io/liquidsoftware/acl/AclPolicy {
+	public final fun decide (Ljava/lang/Object;Lio/liquidsoftware/acl/Operation;Ljava/lang/Object;)Lio/liquidsoftware/acl/AccessDecision;
+}
+
+public final class io/liquidsoftware/acl/AclPolicyBuilder {
+	public fun <init> ()V
+	public final fun allow (Lio/liquidsoftware/acl/Operation;[Lio/liquidsoftware/acl/Operation;Lkotlin/jvm/functions/Function1;)V
+	public final fun allow (Lio/liquidsoftware/acl/Operation;[Lio/liquidsoftware/acl/Operation;Lkotlin/jvm/functions/Function2;)V
+	public final fun build (Lkotlin/reflect/KClass;)Lio/liquidsoftware/acl/AclPolicy;
+}
+
+public final class io/liquidsoftware/acl/AmbiguousPolicy : io/liquidsoftware/acl/DenialReason {
+	public fun <init> (Lkotlin/reflect/KClass;Ljava/util/List;)V
+	public final fun component1 ()Lkotlin/reflect/KClass;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lkotlin/reflect/KClass;Ljava/util/List;)Lio/liquidsoftware/acl/AmbiguousPolicy;
+	public static synthetic fun copy$default (Lio/liquidsoftware/acl/AmbiguousPolicy;Lkotlin/reflect/KClass;Ljava/util/List;ILjava/lang/Object;)Lio/liquidsoftware/acl/AmbiguousPolicy;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCandidates ()Ljava/util/List;
+	public fun getMessage ()Ljava/lang/String;
+	public final fun getResourceType ()Lkotlin/reflect/KClass;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/liquidsoftware/acl/DenialReason {
+	public abstract fun getMessage ()Ljava/lang/String;
+}
+
+public final class io/liquidsoftware/acl/NoMatchingAllowRule : io/liquidsoftware/acl/DenialReason {
+	public static final field INSTANCE Lio/liquidsoftware/acl/NoMatchingAllowRule;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/liquidsoftware/acl/NoPolicyRegistered : io/liquidsoftware/acl/DenialReason {
+	public fun <init> (Lkotlin/reflect/KClass;)V
+	public final fun component1 ()Lkotlin/reflect/KClass;
+	public final fun copy (Lkotlin/reflect/KClass;)Lio/liquidsoftware/acl/NoPolicyRegistered;
+	public static synthetic fun copy$default (Lio/liquidsoftware/acl/NoPolicyRegistered;Lkotlin/reflect/KClass;ILjava/lang/Object;)Lio/liquidsoftware/acl/NoPolicyRegistered;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMessage ()Ljava/lang/String;
+	public final fun getResourceType ()Lkotlin/reflect/KClass;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/liquidsoftware/acl/Operation {
+	public fun covers (Lio/liquidsoftware/acl/Operation;)Z
+}
+
+public final class io/liquidsoftware/acl/Operation$DefaultImpls {
+	public static fun covers (Lio/liquidsoftware/acl/Operation;Lio/liquidsoftware/acl/Operation;)Z
+}
+
+public final class io/liquidsoftware/acl/Operation$Manage : io/liquidsoftware/acl/Operation {
+	public static final field INSTANCE Lio/liquidsoftware/acl/Operation$Manage;
+	public fun covers (Lio/liquidsoftware/acl/Operation;)Z
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/liquidsoftware/acl/Operation$Read : io/liquidsoftware/acl/Operation {
+	public static final field INSTANCE Lio/liquidsoftware/acl/Operation$Read;
+	public fun covers (Lio/liquidsoftware/acl/Operation;)Z
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/liquidsoftware/acl/Operation$Write : io/liquidsoftware/acl/Operation {
+	public static final field INSTANCE Lio/liquidsoftware/acl/Operation$Write;
+	public fun covers (Lio/liquidsoftware/acl/Operation;)Z
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/liquidsoftware/acl/SubjectAccess {
+	public final fun can (Lio/liquidsoftware/acl/Operation;Ljava/lang/Object;)Z
+	public final fun canManage (Ljava/lang/Object;)Z
+	public final fun canRead (Ljava/lang/Object;)Z
+	public final fun canWrite (Ljava/lang/Object;)Z
+	public final fun decide (Lio/liquidsoftware/acl/Operation;Ljava/lang/Object;)Lio/liquidsoftware/acl/AccessDecision;
+	public final fun getSubject ()Ljava/lang/Object;
+}
+
