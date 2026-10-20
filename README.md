@@ -18,6 +18,16 @@ dependencies {
 }
 ```
 
+Maven:
+
+```xml
+<dependency>
+    <groupId>io.liquidsoftware</groupId>
+    <artifactId>acl</artifactId>
+    <version>0.4.0</version>
+</dependency>
+```
+
 Requires JDK 17 or newer (0.4.0 itself requires JDK 21).
 
 **Upgrading from 0.3?** Follow the [migration guide](docs/migrating-to-0.4.md).
@@ -108,6 +118,8 @@ data object Edit : Operation {
 }
 ```
 
+`covers` is not transitive. If `Super` covers `Edit` and `Edit` covers `Read`, a rule for `Super` grants `Read` only if `Super.covers(Read)` is itself true.
+
 Operations are compared with `==`, so declare them as objects or data classes. An instance of a plain class only equals itself, so a check with a new instance is denied.
 
 ## Checking Many Resources
@@ -167,6 +179,8 @@ The following behavior is covered by tests:
 - `Manage` implies `Read` and `Write` but not custom operations; other operations imply only themselves unless they override `covers`
 - empty policies deny all access; resources with no policy are denied
 - denied decisions carry a structured reason with a human-readable message
+
+A catalog is immutable once built and safe to share between threads; it caches routing per resource class. Rules run on the calling thread, and the library does not catch exceptions they throw: a rule that throws (for example, by touching a lazy ORM relation outside its session) makes the check throw. Denials are never exceptions.
 
 ## Using a Local Build
 

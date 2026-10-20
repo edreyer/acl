@@ -103,4 +103,17 @@ class AclCatalogTest {
 
         assertTrue(publicCatalog.canRead(bob, Book(userId = "alice")))
     }
+
+    @Test
+    fun exceptions_thrown_by_rules_propagate() {
+        val throwing = aclCatalog<User> {
+            policy<Book> {
+                allow(Read) { _, _ -> error("relation not loaded") }
+            }
+        }
+
+        val exception = assertFailsWith<IllegalStateException> { throwing.canRead(bob, Book(userId = "bob")) }
+
+        assertEquals("relation not loaded", exception.message)
+    }
 }

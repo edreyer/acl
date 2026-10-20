@@ -16,6 +16,12 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - The library runs on JDK 17. 0.4.0 was compiled for JDK 21, so projects on JDK 17 could not resolve or load it.
 - The published javadoc jar contains the generated documentation. In 0.4.0 it was empty.
 
+### Documentation
+
+- KDoc on every public class and function, enforced by detekt.
+- README and KDoc state that catalogs are immutable and thread-safe, that exceptions thrown by rules propagate out of checks, and that `covers` is not transitive. README adds a Maven install snippet.
+- Removed `docs/requirements.md`, the pre-implementation spec; `AGENTS.md` and the README describe the current design.
+
 ### Build
 
 - Publishing uses nmcp 1.6.2 through its settings plugin. The release command is now `./gradlew publishAggregationToCentralPortal` (see `RELEASING.md`).
