@@ -16,6 +16,11 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 - The library runs on JDK 17. 0.4.0 was compiled for JDK 21, so projects on JDK 17 could not resolve or load it.
 - The published javadoc jar contains the generated documentation. In 0.4.0 it was empty.
 
+### Build
+
+- Publishing uses nmcp 1.6.2 through its settings plugin. The release command is now `./gradlew publishAggregationToCentralPortal` (see `RELEASING.md`).
+- Detekt 2.0.0-alpha.6. Dependabot opens monthly grouped updates for Gradle dependencies and GitHub Actions.
+
 ## [0.4.0] - 2026-10-12
 
 ### Added
