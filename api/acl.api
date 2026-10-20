@@ -72,9 +72,15 @@ public abstract interface class io/liquidsoftware/acl/DenialReason {
 }
 
 public final class io/liquidsoftware/acl/NoMatchingAllowRule : io/liquidsoftware/acl/DenialReason {
-	public static final field INSTANCE Lio/liquidsoftware/acl/NoMatchingAllowRule;
+	public fun <init> (Lio/liquidsoftware/acl/Operation;Lkotlin/reflect/KClass;)V
+	public final fun component1 ()Lio/liquidsoftware/acl/Operation;
+	public final fun component2 ()Lkotlin/reflect/KClass;
+	public final fun copy (Lio/liquidsoftware/acl/Operation;Lkotlin/reflect/KClass;)Lio/liquidsoftware/acl/NoMatchingAllowRule;
+	public static synthetic fun copy$default (Lio/liquidsoftware/acl/NoMatchingAllowRule;Lio/liquidsoftware/acl/Operation;Lkotlin/reflect/KClass;ILjava/lang/Object;)Lio/liquidsoftware/acl/NoMatchingAllowRule;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getMessage ()Ljava/lang/String;
+	public final fun getOperation ()Lio/liquidsoftware/acl/Operation;
+	public final fun getResourceType ()Lkotlin/reflect/KClass;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

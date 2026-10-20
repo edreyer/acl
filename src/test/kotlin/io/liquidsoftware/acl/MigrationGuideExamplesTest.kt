@@ -74,7 +74,7 @@ class MigrationGuideExamplesTest {
 
         val decisions = books.map { it to access.decide(op, it) }
         assertFalse(decisions.all { it.second.granted })
-        assertEquals(AccessDecision.Denied(NoMatchingAllowRule), decisions[1].second)
+        assertEquals(AccessDecision.Denied(NoMatchingAllowRule(op, Book::class)), decisions[1].second)
         assertEquals(decisions.toMap(), books.associateWith { access.decide(op, it) })
 
         assertTrue(emptyList<Book>().all(access::canRead))

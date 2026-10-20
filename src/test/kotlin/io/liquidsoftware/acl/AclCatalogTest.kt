@@ -47,7 +47,7 @@ class AclCatalogTest {
         val book = Book(userId = "alice")
 
         assertEquals(catalog.decide(bob, Read, book).granted, catalog.can(bob, Read, book))
-        assertEquals(AccessDecision.Denied(NoMatchingAllowRule), catalog.decide(bob, Read, book))
+        assertEquals(AccessDecision.Denied(NoMatchingAllowRule(Read, Book::class)), catalog.decide(bob, Read, book))
         assertEquals(AccessDecision.Granted, catalog.decide(admin, Read, book))
     }
 
