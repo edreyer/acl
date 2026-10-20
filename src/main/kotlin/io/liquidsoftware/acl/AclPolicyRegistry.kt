@@ -1,12 +1,14 @@
 package io.liquidsoftware.acl
 
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 internal class AclPolicyRegistry<S : Any> private constructor(
     private val policies: Map<Class<*>, AclPolicy<S, *>>,
 ) {
-    private val resolved = ConcurrentHashMap<Class<*>, Route<S>>()
+    // ClassValue caches per class without keeping the class (or its classloader) reachable.
+    private val resolved = object : ClassValue<Route<S>>() {
+        override fun computeValue(type: Class<*>): Route<S> = mostSpecificPolicyFor(type)
+    }
 
     fun decide(subject: S, operation: Operation, resource: Any): AccessDecision =
         when (val route = route(resource.javaClass)) {
@@ -19,23 +21,20 @@ internal class AclPolicyRegistry<S : Any> private constructor(
             }
         }
 
-    private fun route(type: Class<*>): Route<S> = resolved.getOrPut(type) { mostSpecificPolicyFor(type) }
+    private fun route(type: Class<*>): Route<S> = resolved.get(type)
 
     // Picks the policy registered for the closest supertype of the resource (including the type itself).
-    // Two matching policies where neither type is a subtype of the other is ambiguous, and is denied.
+    // Only the most specific candidates (those with no matching subtype) can win; more than one is ambiguous.
     private fun mostSpecificPolicyFor(type: Class<*>): Route<S> {
         val candidates = policies.keys.filter { it.isAssignableFrom(type) }
         if (candidates.isEmpty()) return Route.None
 
-        val mostSpecific = candidates.singleOrNull { candidate ->
-            candidates.all { other -> other.isAssignableFrom(candidate) }
+        val mostSpecific = candidates.filter { candidate ->
+            candidates.none { other -> other != candidate && candidate.isAssignableFrom(other) }
         }
 
-        return if (mostSpecific == null) {
-            Route.Ambiguous(candidates.map { it.kotlin })
-        } else {
-            Route.To(policies.getValue(mostSpecific))
-        }
+        return mostSpecific.singleOrNull()?.let { Route.To(policies.getValue(it)) }
+            ?: Route.Ambiguous(mostSpecific.map { it.kotlin })
     }
 
     private sealed interface Route<out S : Any> {

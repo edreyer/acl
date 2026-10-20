@@ -22,6 +22,11 @@ class AclTypeHierarchyTest {
     private interface Archivable
     private class Report : Shareable, Archivable
 
+    private interface Asset
+    private interface Printable : Asset
+    private interface Exportable : Asset
+    private class Invoice : Printable, Exportable
+
     private val catalog = aclCatalog<Principal> {
         policy<Document> {
             allow(Operation.Manage) { principal -> principal is Admin }
@@ -97,6 +102,26 @@ class AclTypeHierarchyTest {
             )
         }
         assertFalse(ambiguousCatalog.canRead(Member("bob"), Report()))
+    }
+
+    @Test
+    fun ambiguous_reason_names_only_the_conflicting_types() {
+        val ambiguousCatalog = aclCatalog<Principal> {
+            policy<Asset> {
+                allow(Operation.Read) { _ -> true }
+            }
+            policy<Printable> {
+                allow(Operation.Read) { _ -> true }
+            }
+            policy<Exportable> {
+                allow(Operation.Read) { _ -> true }
+            }
+        }
+
+        assertEquals(
+            AccessDecision.Denied(AmbiguousPolicy(Invoice::class, listOf(Printable::class, Exportable::class))),
+            ambiguousCatalog.decide(Member("bob"), Operation.Read, Invoice()),
+        )
     }
 
     @Test

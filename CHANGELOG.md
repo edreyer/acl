@@ -6,6 +6,11 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+### Changed
+
+- `AmbiguousPolicy.candidates` (and its message) now lists only the conflicting types, not every matching supertype.
+- The per-class routing cache no longer keeps resource classes or their classloaders reachable, which matters for apps that reload classes.
+
 ## [0.4.0] - 2026-10-12
 
 ### Added
