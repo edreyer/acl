@@ -7,7 +7,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Mirrors the 0.4 code in docs/migrating-to-0.4.md. If you change an example there, change it here too.
+ * Mirrors the 0.5 code in docs/migrating-to-0.5.md. If you change an example there, change it here too.
  */
 class MigrationGuideExamplesTest {
     private val bob = User(id = "bob", isSystemAdmin = false)
@@ -102,6 +102,57 @@ class MigrationGuideExamplesTest {
         assertTrue(approvals.can(bob, Approve, Invoice2(approverId = "bob")))
         assertEquals(Operation.Write, operationNamed("Write"))
         assertFailsWith<IllegalStateException> { operationNamed("Delete") }
+
+        val label = when (val operation: Operation = operationNamed("Manage")) {
+            Operation.Read -> "read"
+            Operation.Write -> "write"
+            Operation.Manage -> "manage"
+            else -> "custom $operation"
+        }
+        assertEquals("manage", label)
+    }
+
+    private sealed interface InvoiceOperation : Operation {
+        data object Approve : InvoiceOperation
+        data object Share : InvoiceOperation
+    }
+
+    @Test
+    fun sealed_operations_match_exhaustively() {
+        val labels = listOf(InvoiceOperation.Approve, InvoiceOperation.Share).map { operation ->
+            when (operation) {
+                InvoiceOperation.Approve -> "approved"
+                InvoiceOperation.Share -> "shared"
+            }
+        }
+        assertEquals(listOf("approved", "shared"), labels)
+    }
+
+    @Test
+    fun matching_no_matching_allow_rule() {
+        val decision = acl.decide(bob, Operation.Write, alicesBook)
+
+        assertTrue(decision is AccessDecision.Denied && decision.reason is NoMatchingAllowRule)
+
+        val handled = when (val reason = (decision as AccessDecision.Denied).reason) {
+            is NoMatchingAllowRule -> "forbidden"
+            is NoPolicyRegistered -> "missing ${reason.resourceType}"
+            is AmbiguousPolicy -> "ambiguous ${reason.candidates}"
+        }
+        assertEquals("forbidden", handled)
+
+        val reason = decision.reason as NoMatchingAllowRule
+        assertEquals(Operation.Write, reason.operation)
+        assertEquals(Book::class, reason.resourceType)
+
+        assertEquals(
+            AccessDecision.Denied(NoMatchingAllowRule(Operation.Write, Book::class)),
+            acl.decide(bob, Operation.Write, alicesBook),
+        )
+        assertEquals(
+            "No rule allows Write on io.liquidsoftware.acl.Book",
+            NoMatchingAllowRule(Operation.Write, Book::class).message,
+        )
     }
 
     private open class Document(val ownerId: String)
@@ -125,5 +176,30 @@ class MigrationGuideExamplesTest {
         }
         assertFalse(withOverride.canRead(bob, Contract("bob")))
         assertTrue(withOverride.canRead(bob, Document("bob")))
+    }
+
+    @Test
+    fun denial_resource_type_is_the_runtime_class() {
+        val documents = aclCatalog<User> {
+            policy<Document> {
+                allow(Operation.Read) { user, doc -> user.id == doc.ownerId }
+            }
+        }
+        val reason = (documents.decide(bob, Operation.Write, Contract("bob")) as AccessDecision.Denied).reason
+        assertEquals(NoMatchingAllowRule(Operation.Write, Contract::class), reason)
+    }
+
+    @Test
+    fun wiring_checks_with_has_policy_for() {
+        val documents = aclCatalog<User> {
+            policy<Document> {
+                allow(Operation.Read) { user, doc -> user.id == doc.ownerId }
+            }
+        }
+        val decision = documents.decide(bob, Operation.Read, Contract(ownerId = "bob"))
+        assertFalse(decision is AccessDecision.Denied && decision.reason is NoPolicyRegistered)
+
+        assertTrue(documents.hasPolicyFor(Contract::class))
+        assertFalse(documents.hasPolicyFor(Book::class))
     }
 }

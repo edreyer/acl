@@ -6,9 +6,17 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-20
+
+See [the migration guide](docs/migrating-to-0.5.md) for before-and-after upgrade examples from 0.3 or 0.4.
+
 ### Breaking Changes
 
 - `NoMatchingAllowRule` is now a data class carrying the requested `operation` and the resource's `resourceType`, and its message names both, for example "No rule allows Read on com.example.Book". Replace `Denied(NoMatchingAllowRule)` comparisons with `reason is NoMatchingAllowRule`, or construct it with the operation and type.
+
+### Changed
+
+- Built with Kotlin 2.4 and depends on `kotlin-stdlib` 2.4. Consuming projects need Kotlin 2.3 or newer.
 
 ### Added
 
@@ -61,7 +69,7 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ### Breaking Changes
 
-See [the migration guide](docs/migrating-to-0.4.md) for step-by-step upgrade instructions.
+See [the migration guide](docs/migrating-to-0.5.md) for step-by-step upgrade instructions.
 
 - All public types moved to the single package `io.liquidsoftware.acl`. The `catalog`, `decision` and `policy` subpackages are gone.
 - `aclCatalog { policy<User, Book> { ... } }` is now `aclCatalog<User> { policy<Book> { ... } }`.

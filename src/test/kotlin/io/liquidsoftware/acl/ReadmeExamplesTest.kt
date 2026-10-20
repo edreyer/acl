@@ -82,6 +82,38 @@ class ReadmeExamplesTest {
         assertFalse(Edit.covers(Manage))
     }
 
+    private sealed interface InvoiceOperation : Operation {
+        data object Approve : InvoiceOperation
+        data object Share : InvoiceOperation
+    }
+
+    private fun auditLabel(operation: InvoiceOperation): String = when (operation) {
+        InvoiceOperation.Approve -> "approved"
+        InvoiceOperation.Share -> "shared"
+    }
+
+    @Test
+    fun sealed_operations_match_exhaustively() {
+        val acl = aclCatalog<User> {
+            policy<Invoice> {
+                allow(InvoiceOperation.Approve) { user, invoice -> user.id == invoice.approverId }
+                allow(InvoiceOperation.Share) { user -> user.isSystemAdmin }
+            }
+        }
+        val invoice = Invoice(approverId = "bob")
+        val audit = mutableListOf<String>()
+
+        fun perform(user: User, operation: InvoiceOperation, invoice: Invoice) {
+            if (acl.can(user, operation, invoice)) {
+                audit += auditLabel(operation)
+            }
+        }
+
+        perform(bob, InvoiceOperation.Approve, invoice)
+        perform(bob, InvoiceOperation.Share, invoice)
+        assertEquals(listOf("approved"), audit)
+    }
+
     private sealed interface Principal {
         val id: String
     }

@@ -14,7 +14,7 @@
 
 ```kotlin
 dependencies {
-    implementation("io.liquidsoftware:acl:0.4.1")
+    implementation("io.liquidsoftware:acl:0.5.0")
 }
 ```
 
@@ -24,13 +24,13 @@ Maven:
 <dependency>
     <groupId>io.liquidsoftware</groupId>
     <artifactId>acl</artifactId>
-    <version>0.4.1</version>
+    <version>0.5.0</version>
 </dependency>
 ```
 
 Requires JDK 17 or newer. (0.4.0 required JDK 21; use 0.4.1 or later on JDK 17.)
 
-**Upgrading from 0.3?** Follow the [migration guide](docs/migrating-to-0.4.md).
+**Upgrading from 0.3 or 0.4?** Follow the [migration guide](docs/migrating-to-0.5.md).
 
 ## Quick Start
 
@@ -122,6 +122,37 @@ data object Edit : Operation {
 
 Operations are compared with `==`, so declare them as objects or data classes. An instance of a plain class only equals itself, so a check with a new instance is denied.
 
+### Exhaustive `when` over your operations
+
+`Operation` is open so you can add operations, which means a `when` over `Operation` needs an `else` branch. For exhaustive matching, declare your operations as a sealed interface that extends `Operation`:
+
+```kotlin
+sealed interface InvoiceOperation : Operation {
+    data object Approve : InvoiceOperation
+    data object Share : InvoiceOperation
+}
+
+val acl = aclCatalog<User> {
+    policy<Invoice> {
+        allow(InvoiceOperation.Approve) { user, invoice -> user.id == invoice.approverId }
+        allow(InvoiceOperation.Share) { user -> user.isSystemAdmin }
+    }
+}
+
+fun auditLabel(operation: InvoiceOperation): String = when (operation) {
+    InvoiceOperation.Approve -> "approved"
+    InvoiceOperation.Share -> "shared"
+}  // no else: adding an operation to InvoiceOperation is a compile error here until it is handled
+
+fun perform(user: User, operation: InvoiceOperation, invoice: Invoice) {
+    if (acl.can(user, operation, invoice)) {
+        audit.record(user, auditLabel(operation), invoice)
+    }
+}
+```
+
+They are ordinary operations everywhere else: rules and checks take them like any other `Operation`. The built-in `Read`, `Write` and `Manage` can't join your sealed set, so a `when` that also matches them still needs an `else`.
+
 ## Checking Many Resources
 
 Bind the subject once with `forSubject`, then use Kotlin's collection functions:
@@ -203,7 +234,7 @@ includeBuild("../acl")
 
 ## More
 
-- [docs/migrating-to-0.4.md](docs/migrating-to-0.4.md) explains how to upgrade from 0.3.
+- [docs/migrating-to-0.5.md](docs/migrating-to-0.5.md) explains how to upgrade from 0.3 or 0.4.
 - [CHANGELOG.md](CHANGELOG.md) lists changes by release.
 - [RELEASING.md](RELEASING.md) covers publishing to Maven Central.
 - [docs/limitations-and-future-work.md](docs/limitations-and-future-work.md) tracks known limitations and ideas.
