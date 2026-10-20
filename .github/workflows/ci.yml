@@ -18,9 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           # 17 runs the tests on the oldest supported JDK; 21 (listed last) builds.
@@ -28,7 +28,7 @@ jobs:
             17
             21
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Build, test and lint
         run: ./gradlew build
@@ -48,7 +48,7 @@ jobs:
 
       - name: Upload test reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: build/reports/
