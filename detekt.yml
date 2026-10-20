@@ -5,3 +5,9 @@ complexity:
 style:
   MaxLineLength:
     maxLineLength: 140
+
+comments:
+  UndocumentedPublicClass:
+    active: true
+  UndocumentedPublicFunction:
+    active: true

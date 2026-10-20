@@ -13,6 +13,7 @@ It should stay small, generic, and easy to understand for users who were not inv
 - One Gradle module, one package: `io.liquidsoftware.acl`.
 - Builds with JDK 21 but targets JDK 17 (bytecode, JDK APIs and Gradle metadata). `testMinimumJdk` runs the tests on 17.
 - Kotlin explicit API mode is on; every public symbol is a deliberate choice.
+- Every public class and function has KDoc (detekt's `UndocumentedPublicClass`/`UndocumentedPublicFunction` enforce it), since the Dokka output is published.
 - Public API:
   - `aclCatalog<S> { policy<R> { ... }; register(policy) }` returns `AclCatalog<S>`
   - `AclCatalog<S>`: `decide`, `can`, `canRead`, `canWrite`, `canManage`, `forSubject`
@@ -38,7 +39,7 @@ Subjects, resources and their attributes are the caller's own types. Rules are p
 
 A denied check returns `false` or `AccessDecision.Denied(reason)`. Do not use exceptions for normal denial.
 
-Exceptions are only for programmer or configuration errors caught while building the catalog, such as registering two policies for one type or a `policy<Any>`. Checks never throw: problems found at check time, such as ambiguous routing, are denials.
+Exceptions are only for programmer or configuration errors caught while building the catalog, such as registering two policies for one type or a `policy<Any>`. The library never throws at check time: problems it finds then, such as ambiguous routing, are denials. Exceptions thrown by callers' rules propagate unchanged; don't catch them, since that would hide bugs.
 
 ### Let the compiler do the work
 
