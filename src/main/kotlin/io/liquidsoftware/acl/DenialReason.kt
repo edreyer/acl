@@ -2,16 +2,23 @@ package io.liquidsoftware.acl
 
 import kotlin.reflect.KClass
 
+/** Why an [AccessDecision.Denied] was denied. */
 public sealed interface DenialReason {
+    /** A human-readable description, suitable for logs. */
     public val message: String
 }
 
+/** The resource's policy has no rule that allows the operation for this subject and resource. */
 public data object NoMatchingAllowRule : DenialReason {
     override val message: String = "No matching allow rule"
 
     override fun toString(): String = message
 }
 
+/**
+ * No policy is registered for [resourceType] or any of its supertypes. This usually means a policy is missing from
+ * the catalog rather than an intended denial.
+ */
 public data class NoPolicyRegistered(
     val resourceType: KClass<*>,
 ) : DenialReason {
