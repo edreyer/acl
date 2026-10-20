@@ -6,6 +6,11 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+### Changed
+
+- `AmbiguousPolicy.candidates` (and its message) now lists only the conflicting types, not every matching supertype.
+- The per-class routing cache no longer keeps resource classes or their classloaders reachable, which matters for apps that reload classes.
+
 ### Fixed
 
 - The library runs on JDK 17. 0.4.0 was compiled for JDK 21, so projects on JDK 17 could not resolve or load it.
