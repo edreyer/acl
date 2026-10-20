@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-20
+
 ### Changed
 
 - `AmbiguousPolicy.candidates` (and its message) now lists only the conflicting types, not every matching supertype.

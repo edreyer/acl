@@ -14,7 +14,7 @@
 
 ```kotlin
 dependencies {
-    implementation("io.liquidsoftware:acl:0.4.0")
+    implementation("io.liquidsoftware:acl:0.4.1")
 }
 ```
 
@@ -24,11 +24,11 @@ Maven:
 <dependency>
     <groupId>io.liquidsoftware</groupId>
     <artifactId>acl</artifactId>
-    <version>0.4.0</version>
+    <version>0.4.1</version>
 </dependency>
 ```
 
-Requires JDK 17 or newer (0.4.0 itself requires JDK 21).
+Requires JDK 17 or newer. (0.4.0 required JDK 21; use 0.4.1 or later on JDK 17.)
 
 **Upgrading from 0.3?** Follow the [migration guide](docs/migrating-to-0.4.md).
 
