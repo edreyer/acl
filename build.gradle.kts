@@ -1,4 +1,5 @@
 import org.gradle.api.tasks.bundling.Jar
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
   kotlin("jvm") version "2.3.10"
@@ -21,9 +22,16 @@ dependencies {
   testImplementation(kotlin("test"))
 }
 
+// Build with JDK 21, but publish bytecode and Gradle metadata that JDK 17 consumers can use.
+val minimumJdk = 17
+
 kotlin {
   jvmToolchain(21)
   explicitApi()
+  compilerOptions {
+    jvmTarget.set(JvmTarget.fromTarget(minimumJdk.toString()))
+    freeCompilerArgs.add("-Xjdk-release=$minimumJdk")
+  }
 
   // Fails the build when the public API changes without an updated api/ dump.
   @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
@@ -32,23 +40,34 @@ kotlin {
   }
 }
 
+tasks.withType<JavaCompile>().configureEach {
+  options.release.set(minimumJdk)
+}
+
 java {
   withSourcesJar()
 }
 
 tasks.register<Jar>("javadocJar") {
-  val dokkaJavadoc = tasks.named("dokkaGenerate")
-  dependsOn(dokkaJavadoc)
   archiveClassifier.set("javadoc")
-  from(dokkaJavadoc.map { it.outputs.files })
+  from(tasks.named("dokkaGeneratePublicationJavadoc"))
 }
 
 tasks.check {
   dependsOn("checkLegacyAbi")
 }
 
-tasks.test {
+tasks.withType<Test>().configureEach {
   useJUnitPlatform()
+}
+
+// Runs the tests on the oldest supported JDK. CI runs it; it isn't part of `check`, so local builds only need JDK 21.
+tasks.register<Test>("testMinimumJdk") {
+  description = "Runs the tests on JDK $minimumJdk."
+  group = "verification"
+  testClassesDirs = sourceSets.test.get().output.classesDirs
+  classpath = sourceSets.test.get().runtimeClasspath
+  javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(minimumJdk)) })
 }
 
 detekt {

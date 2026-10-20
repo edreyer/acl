@@ -18,6 +18,8 @@ dependencies {
 }
 ```
 
+Requires JDK 17 or newer (0.4.0 itself requires JDK 21).
+
 **Upgrading from 0.3?** Follow the [migration guide](docs/migrating-to-0.4.md).
 
 ## Quick Start
