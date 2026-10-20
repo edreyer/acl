@@ -34,9 +34,7 @@ kotlin {
 
   // Fails the build when the public API changes without an updated api/ dump.
   @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
-  abiValidation {
-    enabled.set(true)
-  }
+  abiValidation()
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -53,7 +51,7 @@ tasks.register<Jar>("javadocJar") {
 }
 
 tasks.check {
-  dependsOn("checkLegacyAbi")
+  dependsOn("checkKotlinAbi")
 }
 
 tasks.withType<Test>().configureEach {
