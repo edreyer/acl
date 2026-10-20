@@ -163,7 +163,11 @@ acl.canRead(Member("bob"), Contract("bob"))        // true, uses the Document po
 acl.canRead(Member("bob"), SecretDocument("bob"))  // false, SecretDocument has its own policy
 ```
 
-If a resource matches two registered types and neither is a subtype of the other (for example, two interfaces it implements), it is denied with `AmbiguousPolicy`, which names both types. Register a policy for the concrete type to resolve it. A resource with no matching policy is denied with `NoPolicyRegistered`.
+If a resource matches two registered types and neither is a subtype of the other (for example, two interfaces it implements), it is denied with `AmbiguousPolicy`, which names both types. Register a policy for the concrete type to resolve it. A resource with no matching policy is denied with `NoPolicyRegistered`. Through `can*` that looks like any other denial, so assert your wiring in tests with `hasPolicyFor`:
+
+```kotlin
+assertTrue(acl.hasPolicyFor(Contract::class))  // routes to the Document policy
+```
 
 `policy<Any>` is rejected when the catalog is built, because it would apply to every resource without its own policy and quietly replace default deny.
 
@@ -178,6 +182,7 @@ The following behavior is covered by tests:
 - one `allow` rule can grant several operations
 - `Manage` implies `Read` and `Write` but not custom operations; other operations imply only themselves unless they override `covers`
 - empty policies deny all access; resources with no policy are denied
+- `hasPolicyFor` is true only when a type routes to exactly one policy
 - denied decisions carry a structured reason with a human-readable message
 
 A catalog is immutable once built and safe to share between threads; it caches routing per resource class. Rules run on the calling thread, and the library does not catch exceptions they throw: a rule that throws (for example, by touching a lazy ORM relation outside its session) makes the check throw. Denials are never exceptions.

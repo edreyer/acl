@@ -21,6 +21,8 @@ internal class AclPolicyRegistry<S : Any> private constructor(
             }
         }
 
+    fun hasPolicyFor(resourceType: KClass<*>): Boolean = route(resourceType.javaObjectType) is Route.To
+
     private fun route(type: Class<*>): Route<S> = resolved.get(type)
 
     // Picks the policy registered for the closest supertype of the resource (including the type itself).

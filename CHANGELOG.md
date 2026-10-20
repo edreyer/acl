@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+### Added
+
+- `AclCatalog.hasPolicyFor(resourceType)` reports whether a resource type routes to exactly one policy, so tests can catch a missing or ambiguous policy that `can*` would report as an ordinary denial.
+
 ## [0.4.1] - 2026-10-20
 
 ### Changed
