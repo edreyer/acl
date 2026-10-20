@@ -265,6 +265,22 @@ policy<Invoice> {
 acl.can(bob, Approve, invoice)
 ```
 
+To keep a `when` exhaustive without `else`, match on a sealed set of your own operations instead of on `Operation`:
+
+```kotlin
+sealed interface InvoiceOperation : Operation {
+    data object Approve : InvoiceOperation
+    data object Share : InvoiceOperation
+}
+
+when (operation) {  // operation: InvoiceOperation
+    InvoiceOperation.Approve -> "approved"
+    InvoiceOperation.Share -> "shared"
+}
+```
+
+The built-in `Read`, `Write` and `Manage` can't join that set, so a `when` that also matches them still needs an `else`.
+
 In 0.3 `Manage` covered every operation. In 0.5 it covers only `Read`, `Write` and itself, so a custom operation is granted only by rules that name it. To give admins `Approve` as well, write `allow(Manage, Approve) { ... }`. A custom operation covers only itself unless it overrides `covers`.
 
 ## 7. Update code that matches `NoMatchingAllowRule`

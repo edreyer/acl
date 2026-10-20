@@ -122,6 +122,37 @@ data object Edit : Operation {
 
 Operations are compared with `==`, so declare them as objects or data classes. An instance of a plain class only equals itself, so a check with a new instance is denied.
 
+### Exhaustive `when` over your operations
+
+`Operation` is open so you can add operations, which means a `when` over `Operation` needs an `else` branch. For exhaustive matching, declare your operations as a sealed interface that extends `Operation`:
+
+```kotlin
+sealed interface InvoiceOperation : Operation {
+    data object Approve : InvoiceOperation
+    data object Share : InvoiceOperation
+}
+
+val acl = aclCatalog<User> {
+    policy<Invoice> {
+        allow(InvoiceOperation.Approve) { user, invoice -> user.id == invoice.approverId }
+        allow(InvoiceOperation.Share) { user -> user.isSystemAdmin }
+    }
+}
+
+fun auditLabel(operation: InvoiceOperation): String = when (operation) {
+    InvoiceOperation.Approve -> "approved"
+    InvoiceOperation.Share -> "shared"
+}  // no else: adding an operation to InvoiceOperation is a compile error here until it is handled
+
+fun perform(user: User, operation: InvoiceOperation, invoice: Invoice) {
+    if (acl.can(user, operation, invoice)) {
+        audit.record(user, auditLabel(operation), invoice)
+    }
+}
+```
+
+They are ordinary operations everywhere else: rules and checks take them like any other `Operation`. The built-in `Read`, `Write` and `Manage` can't join your sealed set, so a `when` that also matches them still needs an `else`.
+
 ## Checking Many Resources
 
 Bind the subject once with `forSubject`, then use Kotlin's collection functions:

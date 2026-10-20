@@ -112,6 +112,22 @@ class MigrationGuideExamplesTest {
         assertEquals("manage", label)
     }
 
+    private sealed interface InvoiceOperation : Operation {
+        data object Approve : InvoiceOperation
+        data object Share : InvoiceOperation
+    }
+
+    @Test
+    fun sealed_operations_match_exhaustively() {
+        val labels = listOf(InvoiceOperation.Approve, InvoiceOperation.Share).map { operation ->
+            when (operation) {
+                InvoiceOperation.Approve -> "approved"
+                InvoiceOperation.Share -> "shared"
+            }
+        }
+        assertEquals(listOf("approved", "shared"), labels)
+    }
+
     @Test
     fun matching_no_matching_allow_rule() {
         val decision = acl.decide(bob, Operation.Write, alicesBook)
