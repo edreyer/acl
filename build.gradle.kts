@@ -5,10 +5,9 @@ plugins {
   kotlin("jvm") version "2.3.10"
   id("org.jetbrains.dokka") version "2.1.0"
   id("org.jetbrains.dokka-javadoc") version "2.1.0"
-  id("com.gradleup.nmcp") version "0.0.7"
   `maven-publish`
   signing
-  id("dev.detekt") version "2.0.0-alpha.2"
+  id("dev.detekt") version "2.0.0-alpha.6"
 }
 
 group = "io.liquidsoftware"
@@ -71,7 +70,7 @@ tasks.register<Test>("testMinimumJdk") {
 }
 
 detekt {
-  toolVersion = "2.0.0-alpha.2"
+  toolVersion = "2.0.0-alpha.6"
   config.setFrom(files("$rootDir/detekt.yml"))
   buildUponDefaultConfig = true
 }
@@ -117,12 +116,4 @@ signing {
     gradle.taskGraph.allTasks.any { it.name.contains("CentralPortal") || it.name.contains("Nmcp") }
   }
   sign(publishing.publications["mavenJava"])
-}
-
-nmcp {
-  publishAllPublications {
-    username = providers.gradleProperty("centralPortalUsername")
-    password = providers.gradleProperty("centralPortalPassword")
-    publicationType = "AUTOMATIC"
-  }
 }
