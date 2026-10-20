@@ -2,9 +2,9 @@ import org.gradle.api.tasks.bundling.Jar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-  kotlin("jvm") version "2.3.10"
-  id("org.jetbrains.dokka") version "2.1.0"
-  id("org.jetbrains.dokka-javadoc") version "2.1.0"
+  kotlin("jvm") version "2.4.21"
+  id("org.jetbrains.dokka") version "2.2.0"
+  id("org.jetbrains.dokka-javadoc") version "2.2.0"
   `maven-publish`
   signing
   id("dev.detekt") version "2.0.0-alpha.6"
@@ -34,9 +34,7 @@ kotlin {
 
   // Fails the build when the public API changes without an updated api/ dump.
   @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
-  abiValidation {
-    enabled.set(true)
-  }
+  abiValidation()
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -53,7 +51,7 @@ tasks.register<Jar>("javadocJar") {
 }
 
 tasks.check {
-  dependsOn("checkLegacyAbi")
+  dependsOn("checkKotlinAbi")
 }
 
 tasks.withType<Test>().configureEach {

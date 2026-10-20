@@ -44,7 +44,7 @@ jobs:
         run: unzip -l build/libs/acl-*-javadoc.jar | grep -q 'index.html'
 
       - name: Public API unchanged (api/acl.api)
-        run: ./gradlew checkLegacyAbi
+        run: ./gradlew checkKotlinAbi
 
       - name: Upload test reports
         if: failure()
