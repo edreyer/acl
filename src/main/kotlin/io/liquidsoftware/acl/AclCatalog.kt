@@ -6,7 +6,8 @@ import kotlin.reflect.KClass
  * Answers whether a subject of type [S] may perform an operation on a resource.
  *
  * Resources are routed to the policy registered for their most specific type. A resource with no
- * matching policy is denied with [NoPolicyRegistered].
+ * matching policy is denied with [NoPolicyRegistered], and one whose most specific matches tie is denied with
+ * [AmbiguousPolicy].
  *
  * A catalog is immutable once built and safe to share between threads. It caches the routing decision per resource
  * class. Rules run on the calling thread, and an exception a rule throws propagates out of the check.
