@@ -28,7 +28,7 @@ Maven:
 </dependency>
 ```
 
-Requires JDK 17 or newer. (0.4.0 required JDK 21; use 0.4.1 or later on JDK 17.)
+Requires JDK 17 or newer (0.4.0 required JDK 21; use 0.4.1 or later on JDK 17) and Kotlin 2.3 or newer, since 0.5 is built with Kotlin 2.4.
 
 **New to the library?** The [tutorial](docs/tutorial.md) builds up a full set of rules step by step, from a first catalog to custom operations, type hierarchies and testing.
 
