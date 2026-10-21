@@ -203,19 +203,19 @@ class TutorialExamplesTest {
         assertTrue(acl.canWrite(admin, groceries))
         assertFalse(acl.canManage(alice, groceries))
 
-        val itForm = aclCatalog<User> { policy<Note> { allow(Manage) { it.isAdmin } } }
+        val itForm = aclCatalog<Step3.User> { policy<Step3.Note> { allow(Manage) { it.isAdmin } } }
         assertTrue(itForm.canManage(admin, groceries))
     }
 
     @Test
     fun step4_asking_why() = with(Step3) {
         val decision = acl.decide(bob, Write, groceries)
-        assertEquals(AccessDecision.Denied(NoMatchingAllowRule(Write, Note::class)), decision)
-        assertEquals("No rule allows Write on ${Note::class.qualifiedName}", (decision as AccessDecision.Denied).reason.message)
+        assertEquals(AccessDecision.Denied(NoMatchingAllowRule(Write, Step3.Note::class)), decision)
+        assertEquals("No rule allows Write on ${Step3.Note::class.qualifiedName}", (decision as AccessDecision.Denied).reason.message)
 
         assertEquals("granted", explain(acl.decide(alice, Read, groceries)))
         assertEquals("you may not Write this Note", explain(acl.decide(bob, Write, groceries)))
-        assertEquals("bug: no policy for Notebook", explain(acl.decide(alice, Read, Notebook("alice", "Recipes"))))
+        assertEquals("bug: no policy for Notebook", explain(acl.decide(alice, Read, Step3.Notebook("alice", "Recipes"))))
     }
 
     @Test
