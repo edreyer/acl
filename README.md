@@ -30,6 +30,8 @@ Maven:
 
 Requires JDK 17 or newer. (0.4.0 required JDK 21; use 0.4.1 or later on JDK 17.)
 
+**New to the library?** The [tutorial](docs/tutorial.md) builds up a full set of rules step by step, from a first catalog to custom operations, type hierarchies and testing.
+
 **Upgrading from 0.3 or 0.4?** Follow the [migration guide](docs/migrating-to-0.5.md).
 
 ## Quick Start
@@ -234,6 +236,7 @@ includeBuild("../acl")
 
 ## More
 
+- [docs/tutorial.md](docs/tutorial.md) walks through the library step by step.
 - [docs/migrating-to-0.5.md](docs/migrating-to-0.5.md) explains how to upgrade from 0.3 or 0.4.
 - [CHANGELOG.md](CHANGELOG.md) lists changes by release.
 - [RELEASING.md](RELEASING.md) covers publishing to Maven Central.

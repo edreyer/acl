@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 
 ## [Unreleased]
 
+### Added
+
+- A step-by-step [tutorial](docs/tutorial.md), with every example backed by a test.
+
 ## [0.5.0] - 2026-10-20
 
 See [the migration guide](docs/migrating-to-0.5.md) for before-and-after upgrade examples from 0.3 or 0.4.
