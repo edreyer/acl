@@ -545,5 +545,6 @@ Two things to keep in mind:
 ## Where next
 
 - The [README](../README.md) is the short reference for everything covered here.
+- The [recipes](recipes/README.md) pick up where step 14 stops: roles, tenants, list screens, audit logs, Spring and Ktor.
 - [Migrating to 0.5](migrating-to-0.5.md) helps if you have code written against 0.3 or 0.4.
 - [Limitations and future work](limitations-and-future-work.md) lists what the library deliberately doesn't do yet.

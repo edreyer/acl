@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, with a simple `Unreleased` section duri
 ### Added
 
 - A step-by-step [tutorial](docs/tutorial.md), with every example backed by a test.
+- [Recipes](docs/recipes/README.md) for roles and permissions, multi-tenancy, lists and queries, denials as results, audit logging, permission matrix tests, Spring and Ktor. The framework-neutral ones are backed by tests.
 
 ## [0.5.0] - 2026-10-20
 

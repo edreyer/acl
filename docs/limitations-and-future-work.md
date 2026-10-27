@@ -18,4 +18,4 @@ There is no `deny(...)`. Adding one requires clear precedence rules, so it shoul
 
 ### No framework integrations
 
-There are no Arrow, Spring Security or Ktor adapters today. If they return, each should be a separate module that depends on the core (see `AGENTS.md`).
+There are no Arrow, Spring Security or Ktor adapters today; the [recipes](recipes/README.md) show the few lines of glue each needs. If they return, each should be a separate module that depends on the core (see `AGENTS.md`).
