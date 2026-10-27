@@ -64,7 +64,7 @@ Resolving the "current subject" is always adapter logic, never core logic.
 ## Testing Expectations
 
 - Every public behavior has a direct test.
-- `ReadmeExamplesTest` mirrors the README examples and `MigrationGuideExamplesTest` mirrors the 0.5 code in `docs/migrating-to-0.5.md`, and `tutorial.TutorialExamplesTest` mirrors `docs/tutorial.md`. If you change an example in any of these docs, update its test in the same change.
+- `ReadmeExamplesTest` mirrors the README examples and `MigrationGuideExamplesTest` mirrors the 0.5 code in `docs/migrating-to-0.5.md`, and `tutorial.TutorialExamplesTest` mirrors `docs/tutorial.md`, and the tests under `recipes/` mirror the compiled recipes in `docs/recipes/` (one package per recipe). If you change an example in any of these docs, update its test in the same change.
 - `api/acl.api` is the checked-in public API. `./gradlew check` fails when the public API changes without it; run `./gradlew updateKotlinAbi` and commit the diff when the change is intended.
 - Run `./gradlew check` (tests, detekt, API check) before pushing; CI runs the same.
 
